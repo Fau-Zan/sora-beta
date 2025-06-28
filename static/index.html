@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kalkulator Sederhana</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+  <body>
+    <h1>Kalkulator Sederhana</h1>
+
+    <form>
+      <input type="text" id="hasil" name="hasil" readonly>
+      <br>
+      <input type="button" value="1" onclick="tambahAngka('1')">
+      <input type="button" value="2" onclick="tambahAngka('2')">
+      <input type="button" value="3" onclick="tambahAngka('3')">
+      <input type="button" value="+" onclick="tambahOperator('+')">
+      <br>
+      <input type="button" value="4" onclick="tambahAngka('4')">
+      <input type="button" value="5" onclick="tambahAngka('5')">
+      <input type="button" value="6" onclick="tambahAngka('6')">
+      <input type="button" value="-" onclick="tambahOperator('-')">
+      <br>
+      <input type="button" value="7" onclick="tambahAngka('7')">
+      <input type="button" value="8" onclick="tambahAngka('8')">
+      <input type="button" value="9" onclick="tambahAngka('9')">
+      <input type="button" value="*" onclick="tambahOperator('*')">
+      <br>
+      <input type="button" value="C" onclick="clearHasil()">
+      <input type="button" value="0" onclick="tambahAngka('0')">
+      <input type="button" value="=" onclick="hitungHasil()">
+      <input type="button" value="/" onclick="tambahOperator('/')">
+    </form>
+
+    <script>
+      function tambahAngka(angka) {
+        document.getElementById("hasil").value += angka;
+      }
+
+      function tambahOperator(operator) {
+        document.getElementById("hasil").value += operator;
+      }
+
+      function hitungHasil() {
+        var hasil = eval(document.getElementById("hasil").value);
+        document.getElementById("hasil").value = hasil;
+      }
+
+      function clearHasil() {
+        document.getElementById("hasil").value = "";
+      }
+    </script>
+  </body>
+</html>

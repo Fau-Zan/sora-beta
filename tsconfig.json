@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "target": "ESNext",  
+    "lib": [
+      "ESNext"
+    ],
+    "module": "ESNext",
+    "outDir": "lib",
+    "allowJs": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": false,
+    "allowSyntheticDefaultImports": true,
+    "strictPropertyInitialization": false, 
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+  },
+  "include": [
+    "script/**/*"
+  ],
+  "tsc-alias": {
+    "replacers": {
+        "base-url": {
+            "enable": false
+        }
+    }
+  }
+}
