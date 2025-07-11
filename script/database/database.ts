@@ -5,9 +5,10 @@ import * as pouchdb_upsert from 'pouchdb-upsert';
 DB.plugin(pouchdb_find);
 DB.plugin(pouchdb_upsert);
 
+
 export class Database extends DB {
       constructor(
-            public name: string = 'zan',
+            public name: string = 'database',
             public config: PouchDB.Configuration.DatabaseConfiguration = {
                   deterministic_revs: true,
                   size: 5 * 1024 * 1024,
@@ -35,7 +36,6 @@ export class Database extends DB {
                   );
                   if (item) return true;
             } catch (err) {
-                  const Error = err;
                   this.update(id, docs);
             }
       }
@@ -55,6 +55,7 @@ export class Database extends DB {
             if (!document) return await this.upsert<typeof docs>(docs);
             else return await this.upsert(Object.assign({}, document, docs), true);
       }
+      
       public async upsert<T extends object>(
             docs: PouchDB.Core.Document<T> & Partial<PouchDB.Core.RevisionIdMeta>,
             ov_rev_requirement = false,
@@ -65,11 +66,13 @@ export class Database extends DB {
             if (ov_rev_requirement) {
                   docs._rev = docs._rev ?? ((await this.findOne<typeof docs>(docs._id).catch()) || {})._rev;
             }
-            return this.put(docs);
+            return this.upsert(docs);
       }
+
       public async delete<T>(docs: Partial<T> & PouchDB.Core.IdMeta & PouchDB.Core.RevisionIdMeta) {
             return await this.remove(docs);
       }
+
       public reset(): void {
             this.destroy().then(() => {
                   new Database();

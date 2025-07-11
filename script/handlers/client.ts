@@ -12,13 +12,13 @@ import {
       proto,
 } from '@whiskeysockets/baileys';
 import util from 'util';
-import { newEvents } from '../base';
+import { BuildEvents } from '../base';
 import { spawn } from 'child_process';
 import { Database as DB } from '../database';
 import { functions } from '../utils';
 
 type CurrentMessageType = keyof typeof WAProto.Message.prototype;
-export default class BaseClient extends newEvents<Clients.MessageEvent> {
+export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
       constructor() {
             super();
             for (const i of Object.keys(WAProto.Message.prototype) as CurrentMessageType[]) {

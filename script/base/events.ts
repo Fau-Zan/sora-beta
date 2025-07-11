@@ -1,4 +1,4 @@
-import { errorStackFormat, Logger } from '../utils';
+import { functions } from '../utils';
 
 type Listener = (...args: any[]) => void;
 type ListenerArgs<L> = L extends Listener ? Parameters<L> : any[];
@@ -8,7 +8,7 @@ interface EventMap {
 interface ListenerObject {
       [P: string]: Listener[];
 }
-export class newEvents<O extends {} = EventMap> {
+export class BuildEvents<O extends {} = EventMap> {
       public maxListenerSize: number = 250;
       public listeners: ListenerObject = {};
 
@@ -38,7 +38,7 @@ export class newEvents<O extends {} = EventMap> {
       on<K extends keyof O>(event: K, listener: O[K]) {
             const listeners = this.listeners?.[event as string] ?? [];
             if (this.maxListenerSize !== -1 && listeners.length > this.maxListenerSize)
-                  return Logger.error(`Reached the maximum amount of listeners to append (event=)`);
+                  return functions.logger.error(`Reached the maximum amount of listeners to append (event=)`);
 
             listeners.push(listener as any);
             this.listeners[event as string] = listeners;

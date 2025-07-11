@@ -1,5 +1,5 @@
 import { functions } from './functions';
-import { newEvents } from '../base';
+import { BuildEvents } from '../base';
 const logger = functions.logger.child({ class: 'violet', system: 'queue' });
 
 function createHash(length) {
@@ -21,7 +21,7 @@ export class Queue {
       public event;
 
       constructor() {
-            this.event = new newEvents();
+            this.event = new BuildEvents();
       }
       add(type, fungsi: any, ...args: any[]) {
             if (!this.list[type]) (this.list[type] = []), (this.running[type] = false);
