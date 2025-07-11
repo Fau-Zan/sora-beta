@@ -1,4 +1,4 @@
-import type { Whatsapp, Events as Clients, WhatsType } from 'violet';
+import type { Events as Clients, WhatsType } from 'violet';
 import {
       AnyMessageContent,
       generateWAMessageFromContent,
@@ -11,7 +11,6 @@ import {
       isJidUser,
       proto,
 } from '@whiskeysockets/baileys';
-import path from 'path';
 import util from 'util';
 import { newEvents } from '../base';
 import { spawn } from 'child_process';

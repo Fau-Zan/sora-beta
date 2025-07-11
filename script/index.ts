@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: 'env' });
 import * as Listener from './listeners';
-import Pino from 'pino';
 import { BaseClient, Pair } from './handlers';
 import { Boom } from '@hapi/boom';
 import { Whatsapp } from 'violet';
@@ -26,7 +25,6 @@ import readline from 'readline';
 const msgRetryCounterCache = new NodeCache();
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (text: string) => new Promise<string>((resolve) => rl.question(text, resolve));
-const logger = Pino(functions.pinoLogger) as any;
 export async function autoStart(configName: string = 'zan', usePair: boolean = true) {
       rimrafSync(configName + '/LOCK');
       const pocket = new Database(configName);
@@ -34,13 +32,13 @@ export async function autoStart(configName: string = 'zan', usePair: boolean = t
       const config: UserFacingSocketConfig = {
             auth: {
                   creds: state.creds,
-                  keys: makeCacheableSignalKeyStore(state.keys as SignalKeyStore, logger),
+                  keys: makeCacheableSignalKeyStore(state.keys as SignalKeyStore, functions.logger),
             },
             printQRInTerminal: !usePair,
             mobile: false,
             browser: ['Chrome (Linux)', '', ''],
             version: (await fetchLatestBaileysVersion()).version,
-            logger,
+            logger: functions.logger,
             qrTimeout: 60000,
             msgRetryCounterCache,
             generateHighQualityLinkPreview: true,

@@ -5,7 +5,7 @@ export class command extends BaseCommand {
       private ext: string;
       @Cmd('(tikmp4|tikmp3)', {
             as: ['tikmp4', 'tikmp3'],
-            description: "download video dari link tiktok",
+            description: 'download video dari link tiktok',
             usePrefix: true,
             division: 'download',
             acc: {

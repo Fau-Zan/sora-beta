@@ -19,10 +19,7 @@ declare module 'violet' {
       namespace Events {
             interface MessageEvent {
                   'store.update'(): void;
-                  'pair.cmd'(proto: {
-                        client: Whatsapp.IClient
-                        M: Whatsapp.IMessage
-                  }): void;
+                  'pair.cmd'(proto: { client: Whatsapp.IClient; M: Whatsapp.IMessage }): void;
                   'reaction'(proto: {
                         key: WAProto.IMessageKey;
                         reaction: WAProto.IReaction;

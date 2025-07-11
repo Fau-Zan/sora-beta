@@ -1,7 +1,9 @@
 import DB from 'pouchdb';
 import { Logger } from '../utils';
-import plugin from 'pouchdb-find';
-DB.plugin(plugin);
+import pouchdb_find from 'pouchdb-find';
+import * as pouchdb_upsert from 'pouchdb-upsert';
+DB.plugin(pouchdb_find);
+DB.plugin(pouchdb_upsert);
 
 export class Database extends DB {
       constructor(

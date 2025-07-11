@@ -15,7 +15,7 @@ export class command extends BaseCommand {
       @Cmd('(sticker|stc)', {
             as: ['sticker'],
             division: 'convert',
-            description: "mengubah gambar menjadi sticker",
+            description: 'mengubah gambar menjadi sticker',
             usePrefix: true,
             acc: {
                   response: true,

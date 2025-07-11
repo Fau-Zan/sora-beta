@@ -6,6 +6,7 @@ import { config } from 'dotenv';
 import FormData from 'form-data';
 import { fileTypeFromBuffer } from 'file-type';
 import { Whatsapp } from 'violet';
+import pino from 'pino';
 
 config();
 class Functions {
@@ -31,45 +32,48 @@ class Functions {
                   Array.from(data).map(([k, v]) => {
                         plugins[k] = v;
                   });
-                  const result = Object.entries(plugins).reduce((acc, [key, value]) => {
-                        for (const as of value.as) {
-                              const group = value.division;
-                              if (acc[group]) {
-                                    acc[group].push({
+            const result = Object.entries(plugins).reduce((acc, [key, value]) => {
+                  for (const as of value.as) {
+                        const group = value.division;
+                        if (acc[group]) {
+                              acc[group].push({
+                                    command: as,
+                                    description: value.description,
+                                    isPrefix: value.usePrefix,
+                              });
+                        } else {
+                              acc[group] = [
+                                    {
                                           command: as,
                                           description: value.description,
                                           isPrefix: value.usePrefix,
-                                    });
-                              } else {
-                                    acc[group] = [
-                                          {
-                                                command: as,
-                                                description: value.description,
-                                                isPrefix: value.usePrefix,
-                                          },
-                                    ];
-                              }
+                                    },
+                              ];
                         }
-                        return acc;
-                  }, {});
-                  return result
+                  }
+                  return acc;
+            }, {});
+            return result;
       }
       public getEnv() {
             return cleanEnv(process.env, {
                   bing: str(),
                   tensor: str(),
             });
-      } 
-      public pinoLogger = {
-            base: undefined,
-            transport: {
-                  target: 'pino-pretty',
-            },
-            options: {
-                  colorize: true,
-                  message: (msg: any) => msg.message,
-            },
-      };
+      }
+      get logger() {
+            const pinoLogger = {
+                  base: undefined,
+                  transport: {
+                        target: 'pino-pretty',
+                  },
+                  options: {
+                        colorize: true,
+                        message: (msg: any) => msg.message,
+                  },
+            };
+            return pino(pinoLogger) as any;
+      }
 
       public async isImageSafe(path: Buffer | string): Promise<{ isSafe: boolean; rating: number }> {
             const { data: buffer } = await this.getFile(path);
