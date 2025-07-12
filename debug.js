@@ -1,5 +1,5 @@
 import { log } from 'console';
-import y2mate from "./lib/plugins/youtube"
+import y2mate from "./lib/plugins/youtube.js"
 
 //const p = await y2mate("pRfmrE0ToTo")
 // log(p)
