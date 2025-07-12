@@ -25,7 +25,7 @@ import readline from 'readline';
 const msgRetryCounterCache = new NodeCache();
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (text: string) => new Promise<string>((resolve) => rl.question(text, resolve));
-export async function autoStart(configName: string = 'zan', usePair: boolean = true) {
+export async function autoStart(configName: string = 'zan', usePair: boolean = false) {
       rimrafSync(configName + '/LOCK');
       const pocket = new Database(configName);
       const { state, saveState } = await singleSession(configName);
@@ -85,9 +85,7 @@ export async function autoStart(configName: string = 'zan', usePair: boolean = t
             }
             switch (connection) {
                   case 'close':
-                        if (new Boom(lastDisconnect?.error).output.statusCode !== DisconnectReason.loggedOut) {
-                              return autoStart();
-                        }
+                        autoStart();
                         break;
                   case 'open':
                         client.store.bind(client.sock.ev);

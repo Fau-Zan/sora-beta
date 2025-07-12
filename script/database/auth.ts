@@ -48,6 +48,7 @@ export const singleSession = async (session: string) => {
                   })
                   .catch(() => void null);
       };
+
       const result = await pocket
             .get<IAuthentication>(session)
             .then((doc: any) => doc.auth)

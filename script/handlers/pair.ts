@@ -102,9 +102,8 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
                   M.from,
                   `mungkin maksud anda adalah "${prefix}${offerKey}" dengan presentasi kesamaan: ${
                         Math.round(sensitive * 100 * 100) / 100
-                  }%`,
-            ),
-            { quoted: M });
+                  }%`, { quoted: M }
+            ))
       }
       for (let events of this.events) {
             events = await import(events);

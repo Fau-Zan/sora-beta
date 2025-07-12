@@ -1,4 +1,4 @@
-import FannAI from '@rifandavinci/ai-chatbot';
+import Groq from 'groq-sdk';
 import { Config, Cmd, BaseCommand } from '../../base';
 import { Whatsapp } from 'violet';
 
@@ -63,10 +63,16 @@ export class command extends BaseCommand {
 
       async all() {
             try {
+                  if (!this.M?.body) return void null;
                   if (!this.M.body.toLowerCase().includes('violet')) return void null;
-                  const ai = new FannAI();
-                  const result_msg = await ai.chat((await this.preprompt()) + this.M.body, 'llama');
-                  const jsonFormat = JSON.parse(result_msg.response) as any;
+                  const groq = new Groq({
+                        apiKey: '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',
+                  });
+                  const chatCompletion: Groq.Chat.ChatCompletion = await groq.chat.completions.create(
+                        (await this.messages(this.M.body)) as any,
+                  );
+                  console.log(JSON.stringify(chatCompletion, null, 2))
+                  const jsonFormat = JSON.parse(chatCompletion.choices[0].message.content);
                   const prefix = '?';
                   if (jsonFormat?.isviolet) {
                         const M = this.M;
@@ -74,17 +80,15 @@ export class command extends BaseCommand {
                         return void this.client.emit('pair.cmd', { M, client: this.client });
                   } else return void null;
             } catch (e) {
-                  Promise.all(e);
             }
       }
 
       private async messages(prompt: string) {
-            return [
-                  {
-                        role: 'user',
-                        content: (await this.preprompt()) + prompt,
-                  },
-            ];
+            const messages = {
+                  messages: [{ role: 'user', content: (await this.preprompt()) + prompt }],
+                  model: 'llama-3.3-70b-versatile',
+            };
+            return messages;
       }
 
       private async cmdContext() {
@@ -129,7 +133,8 @@ export class command extends BaseCommand {
             
             Jika kamu tidak dipanggil atau dipanggil namun tidak ada perintah yang cocok, maka cmd dan advance harus null, dan isviolet tetap false.
             Balas dengan format objek tersebut dan jadikan dalam bentuk JSON.stringify agar saya bisa melakukan JSON.parse.
-            
-            Ini adalah input perintah saya: `;
+            catatan: output kamu hanya seperti ini, example output: "{cmd: "play", isviolet: true,advance: "Not You"}", hanya itu saja tanpa ada kata json di depannya
+
+            Ini adalah input perintah saya: `
       }
 }
