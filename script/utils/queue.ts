@@ -85,3 +85,5 @@ export class Queue {
                   });
       }
 }
+
+export const globalQueue = new Queue()

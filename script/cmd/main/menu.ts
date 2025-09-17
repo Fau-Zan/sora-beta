@@ -71,7 +71,6 @@ export class command extends BaseCommand {
                   const chatCompletion: Groq.Chat.ChatCompletion = await groq.chat.completions.create(
                         (await this.messages(this.M.body)) as any,
                   );
-                  console.log(JSON.stringify(chatCompletion, null, 2))
                   const jsonFormat = JSON.parse(chatCompletion.choices[0].message.content);
                   const prefix = '?';
                   if (jsonFormat?.isviolet) {

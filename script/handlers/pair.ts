@@ -105,6 +105,8 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
                   }%`, { quoted: M }
             ))
       }
+
+      console.log(M.body)
       for (let events of this.events) {
             events = await import(events);
             events = events[_.keys(events)[0]];
@@ -133,13 +135,17 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
                               : false
                         : undefined;
                   if (!isValid) continue;
-                  if (plugin.acc?.owner && !client.owner.find((r) => r.number === jidDecode(M.sender).user)) continue;
+                 // if (plugin.acc?.owner && !client.owner.find((r) => r.number === jidDecode(M.sender).user)) continue;
+                   console.log(1)
                   if (plugin.acc?.admin && !M.admin) {
                         return client.sendMessage(M.from, 'this command can be used for admin', 'conversation', {
                               quoted: M,
                         });
                   }
+                   console.log(3)
                   if (plugin.acc?.textOrQuotedText && !query.full) continue;
+                  console.log(4)
+                  console.log(plugin)
                   return void (await plugin
                         .bind(events)(events)
                         .catch((_th) => {

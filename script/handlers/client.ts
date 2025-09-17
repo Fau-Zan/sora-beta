@@ -1,8 +1,7 @@
-import type { Events as Clients, WhatsType } from 'violet';
+import type { Events as Clients, WhatsType} from 'violet';
 import {
       AnyMessageContent,
       generateWAMessageFromContent,
-      makeInMemoryStore,
       MiscMessageGenerationOptions,
       jidNormalizedUser,
       WAProto,
@@ -14,7 +13,6 @@ import {
 import util from 'util';
 import { BuildEvents } from '../base';
 import { spawn } from 'child_process';
-import { Database as DB } from '../database';
 import { functions } from '../utils';
 
 type CurrentMessageType = keyof typeof WAProto.Message.prototype;
@@ -25,10 +23,6 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
                   this.MessageType[i] = this.MessageType[i];
             }
             delete (this.MessageType as any)['toJSON'];
-      }
-
-      public get pocket(): DB {
-            return new DB();
       }
 
       public get cache(): Cache {
@@ -179,7 +173,7 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             });
       }
 
-      public store: ReturnType<typeof makeInMemoryStore>;
+      public store: WhatsType.IMongoStore;
 
       public editMessage(key: proto.IMessageKey, str: string) {
             if (key.id)
