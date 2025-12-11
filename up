@@ -1,13 +1,153 @@
-msg="Update from up.sh"
-if [[ "$@" ]]; then
-    msg="$@"
+#!/usr/bin/env bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# Simple helper to add/commit/push current branch with nicer UX
+
+DEFAULT_MSG="Update from up.sh"
+FORCE=1
+DRY_RUN=0
+ASSUME_YES=0
+
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+BOLD="\033[1m"
+RESET="\033[0m"
+
+usage() {
+    echo -e "${BOLD}Usage:${RESET} up [options] [message]\n"
+    echo "Options:" 
+    echo "  -m, --message MSG   Use MSG as the commit message (or provide as argument)"
+    echo "  -f, --force         Force-push (default)"
+    echo "  -n, --no-force      Do not force-push"
+    echo "  -y, --yes           Assume yes to any prompts"
+    echo "  --dry-run           Show actions without running them"
+    echo "  -h, --help          Show this help"
+}
+
+echo_info() { echo -e "${BLUE}${1}${RESET}"; }
+echo_ok() { echo -e "${GREEN}${1}${RESET}"; }
+echo_warn() { echo -e "${YELLOW}${1}${RESET}"; }
+echo_err() { echo -e "${RED}${1}${RESET}"; }
+
+msg="${DEFAULT_MSG}"
+
+# Parse flags
+while [[ ${#} -gt 0 ]]; do
+    case "$1" in
+        -m|--message)
+            shift
+            if [[ ${#} -eq 0 ]]; then echo_err "Missing message after -m/--message"; exit 2; fi
+            msg="$1"
+            shift
+            ;;
+        -f|--force)
+            FORCE=1
+            shift
+            ;;
+        -n|--no-force)
+            FORCE=0
+            shift
+            ;;
+        -y|--yes)
+            ASSUME_YES=1
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -* )
+            echo_err "Unknown option: $1"
+            usage
+            exit 2
+            ;;
+        * )
+            # treat remaining args as commit message
+            msg="$*"
+            break
+            ;;
+    esac
+done
+
+# Quick checks
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo_err "Not a git repository. Aborting."
+    exit 2
 fi
 
-currentBranch=$(git branch --no-color --show-current)
-git add .
-git commit -m "$msg"
-git branch -M ${currentBranch}
-git push -u origin ${currentBranch} --force
+currentBranch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+if [[ -z "${currentBranch}" ]]; then
+    echo_err "Failed to determine current branch."
+    exit 2
+fi
 
-unset msg
-unset currentBranch
+echo_info "Preparing to commit and push branch: ${BOLD}${currentBranch}${RESET}"
+
+# Stage all changes
+cmd_add=(git add -A)
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    echo_warn "DRY RUN: ${cmd_add[*]}"
+else
+    "${cmd_add[@]}"
+fi
+
+# Check for staged changes
+if git diff --cached --quiet; then
+    echo_warn "No changes staged for commit. Nothing to do."
+    exit 0
+fi
+
+cmd_commit=(git commit -m "${msg}")
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    echo_warn "DRY RUN: ${cmd_commit[*]}"
+else
+    if ! "${cmd_commit[@]}"; then
+        echo_err "Commit failed or there was nothing to commit."
+        exit 1
+    fi
+fi
+
+# Build push command
+push_cmd=(git push -u origin "${currentBranch}")
+if [[ ${FORCE} -eq 1 ]]; then
+    push_cmd+=(--force)
+fi
+
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    echo_warn "DRY RUN: ${push_cmd[*]}"
+    echo_ok "Dry run complete."
+    exit 0
+fi
+
+if [[ ${FORCE} -eq 1 && ${ASSUME_YES} -ne 1 ]]; then
+    read -r -p "About to force-push ${currentBranch} to origin. Continue? [y/N] " ans
+    case "${ans,,}" in
+        y|yes)
+            ;;
+        *)
+            echo_warn "Aborted by user.";
+            exit 0
+            ;;
+    esac
+fi
+
+echo_info "Pushing to origin/${currentBranch} ${FORCE:+(force)}"
+if "${push_cmd[@]}"; then
+    echo_ok "Push successful."
+    exit 0
+else
+    echo_err "Push failed.";
+    exit 1
+fi
