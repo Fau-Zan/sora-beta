@@ -1,19 +1,10 @@
-/**
- * PostgreSQL Eval Helpers
- * Helper functions untuk evaluate dan query database dari client
- * Gunakan di command eval atau own-eval
- */
-
 import { Pool } from 'pg';
 
-// Initialize PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
 });
 
-/**
- * Execute raw SQL query dan return hasil
- */
+
 export const query = async (sql: string, params?: any[]) => {
   try {
     const result = await pool.query(sql, params);

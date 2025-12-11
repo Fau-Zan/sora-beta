@@ -39,36 +39,26 @@ export class Command extends BaseCommand {
                   let { query, modify } = this;
                   
                   if (!query.full) {
-                        return void (await this.replyText('⚠️ Gunakan format: > code'));
+                        return void (await this.replyText('Gunakan format: > code'));
                   }
 
-                  // Auto return if --r flag
                   if (modify.verify?.r) {
                         query.full = 'return ' + query.parsed;
                   }
 
-                  // Create sandbox context dengan useful utilities
                   const sandbox = {
-                        // Baileys & Client utilities
                         client: this.client,
                         M: this.M,
                         send: (text: string) => this.client.sendText(this.M.from, text, { quoted: this.M }),
                         reply: (text: string) => this.replyText(text),
-                        
-                        // File system
                         fs,
                         path,
                         readFile: (file: string) => fs.readFileSync(file, 'utf-8'),
                         writeFile: (file: string, data: string) => fs.writeFileSync(file, data),
-                        
-                        // HTTP requests
                         axios,
                         fetch: (url: string) => axios.get(url),
                         post: (url: string, data: any) => axios.post(url, data),
-                        
-                        // Database
                         db: this.client.store,
-                        postgres: require('../../../script/database/postgres'),
                         require,
                         console,
                         Logger,
@@ -80,13 +70,11 @@ export class Command extends BaseCommand {
                         inspect: (obj: any, depth: number = 3) => format(obj, false, depth),
                   };
 
-                  // Execute dengan timeout 10 detik
                   const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error('⏱️ Execution timeout (10s)')), 10000)
                   );
 
                   const evalPromise = (async () => {
-                        // Bind sandbox variables
                         const keys = Object.keys(sandbox);
                         const values = Object.values(sandbox);
                         const code = `(async () => { ${query.full}})()`;
@@ -99,21 +87,17 @@ export class Command extends BaseCommand {
                   })();
 
                   await Promise.race([evalPromise, timeoutPromise]);
-
-                  // Format output
                   const execTime = Date.now() - startTime;
                   const output = this._formatOutput(ev, modify);
-                  
-                  const response = `✅ Success (${execTime}ms)\n\`\`\`\n${output}\n\`\`\``;
+                  const response = `Success (${execTime}ms)\n\`\`\`\n${output}\n\`\`\``;
                   return void (await this.replyText(response));
-
             } catch (e: any) {
                   const execTime = Date.now() - startTime;
                   const errMsg = e.message || e.toString();
                   
                   Logger.error('Eval error:', e);
                   
-                  const response = `❌ Error (${execTime}ms)\n\`\`\`\n${errMsg}\n\`\`\``;
+                  const response = `Error (${execTime}ms)\n\`\`\`\n${errMsg}\n\`\`\``;
                   return void (await this.replyText(response));
             }
       }
@@ -138,33 +122,27 @@ export class Command extends BaseCommand {
                   const { query, modify } = this;
                   
                   if (!query.full) {
-                        return void (await this.replyText('⚠️ Gunakan format: $ command'));
+                        return void (await this.replyText('Gunakan format: $ command'));
                   }
-
-                  // Get working directory
                   const cwd = modify.usage?.dir || process.cwd();
-                  
-                  // Check if directory exists
                   if (!fs.existsSync(cwd)) {
-                        return void (await this.replyText(`❌ Directory not found: ${cwd}`));
+                        return void (await this.replyText(`Directory not found: ${cwd}`));
                   }
 
                   const response = execSync(query.full, {
                         cwd,
                         encoding: 'utf-8',
-                        maxBuffer: 1024 * 1024 * 5, // 5MB buffer
-                        timeout: 15000, // 15s timeout
+                        maxBuffer: 1024 * 1024 * 5,
+                        timeout: 15000, 
                   });
 
                   const execTime = Date.now() - startTime;
                   const output = (response as string).trim();
-                  
-                  // Parse as JSON if --json flag
                   if (modify.verify?.json) {
                         try {
                               const parsed = JSON.parse(output);
                               const formatted = format(parsed, false, 3);
-                              return void (await this.replyText(`✅ JSON (${execTime}ms)\n\`\`\`\n${formatted}\n\`\`\``));
+                              return void (await this.replyText(`JSON (${execTime}ms)\n\`\`\`\n${formatted}\n\`\`\``));
                         } catch {
                               // Fall through to normal output
                         }
@@ -172,9 +150,9 @@ export class Command extends BaseCommand {
 
                   if (output) {
                         const truncated = output.length > 2000 ? output.substring(0, 2000) + '\n...[truncated]' : output;
-                        return void (await this.replyText(`✅ Output (${execTime}ms)\n\`\`\`\n${truncated}\n\`\`\``));
+                        return void (await this.replyText(`Output (${execTime}ms)\n\`\`\`\n${truncated}\n\`\`\``));
                   } else {
-                        return void (await this.replyText(`✅ Executed (${execTime}ms) - No output`));
+                        return void (await this.replyText(`Executed (${execTime}ms) - No output`));
                   }
 
             } catch (error: any) {
@@ -183,39 +161,27 @@ export class Command extends BaseCommand {
                   const truncated = errMsg.length > 1000 ? errMsg.substring(0, 1000) + '\n...[truncated]' : errMsg;
                   
                   Logger.error('Exec error:', error);
-                  return void (await this.replyText(`❌ Error (${execTime}ms)\n\`\`\`\n${truncated}\n\`\`\``));
+                  return void (await this.replyText(`Error (${execTime}ms)\n\`\`\`\n${truncated}\n\`\`\``));
             }
       }
 
-      /**
-       * Helper function untuk format output
-       */
       private _formatOutput(value: any, modify: any): string {
             try {
-                  // --json flag
                   if (modify.verify?.json) {
                         return JSON.stringify(value, null, 2);
                   }
-
-                  // --inspect flag untuk deep inspection
                   if (modify.verify?.inspect) {
                         return format(value, false, 10);
                   }
-
-                  // Default formatting
                   if (typeof value === 'string') {
                         return value;
                   }
-
                   if (value === null) {
                         return 'null';
                   }
-
                   if (value === undefined) {
                         return 'undefined';
                   }
-
-                  // Untuk object/array, gunakan format dengan depth 3
                   return format(value, false, 3);
             } catch (e: any) {
                   return `[Format Error: ${e.message}]`;
