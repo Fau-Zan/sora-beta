@@ -1,8 +1,7 @@
 import * as baileys from '@whiskeysockets/baileys'
 import type { AuthenticationCreds, SignalDataTypeMap } from '@whiskeysockets/baileys'
 import { PostgresBase } from './postgres'
-import { Logger } from '../utils'
-import { start } from 'repl'
+import { Logger } from '../../utils'
 
 const { proto, BufferJSON, initAuthCreds } = baileys
 
@@ -15,12 +14,13 @@ const KEY_MAP: { [K in keyof SignalDataTypeMap]: string } = {
   'app-state-sync-key': 'appStateSyncKeys',
   'app-state-sync-version': 'appStateVersions',
   'sender-key-memory': 'senderKeyMemory',
+  'lid-mapping': 'lidMapping',
+  'device-list': 'deviceList',
+  tctoken: 'tctoken',
 }
 
 export async function singleSessionPostgres(sessionId: string, connectionString: string) {
   const db = await new PostgresBase({ connectionString, serializeWrites: true }).connect()
-
-  // Create table if not exists
   await db.ensureTable(
     'wa_auth',
     `
@@ -51,7 +51,18 @@ export async function singleSessionPostgres(sessionId: string, connectionString:
     keys = {}
   }
 
+  keys.preKeys = keys.preKeys || {}
+  keys.sessions = keys.sessions || {}
+  keys.senderKeys = keys.senderKeys || {}
+  keys.appStateSyncKeys = keys.appStateSyncKeys || {}
+  keys.appStateVersions = keys.appStateVersions || {}
+  keys.senderKeyMemory = keys.senderKeyMemory || {}
+  keys.lidMapping = keys.lidMapping || {}
+  keys.deviceList = keys.deviceList || {}
+  keys.tctoken = keys.tctoken || {}
+
   const persist = async (payload: { creds: AuthenticationCreds; keys: any }) => {
+    await db.deleteMany('wa_auth', { session_id: sessionId })
     await db.upsertOne<AuthDoc>(
       'wa_auth',
       'session_id',
@@ -64,19 +75,8 @@ export async function singleSessionPostgres(sessionId: string, connectionString:
 
   const saveState = async () => {
     try {
-      Logger.info(`singleSessionPostgres: saving state for session ${sessionId}`)
-      const existing = await db.findOne<AuthDoc>('wa_auth', { session_id: sessionId })
       let input = { creds, keys }
-      if (existing?.auth) {
-        try {
-          const current = JSON.parse(existing.auth, BufferJSON.reviver)
-          input = Object.assign({}, current, input)
-        } catch (err) {
-          Logger.warn('singleSessionPostgres: failed to parse existing auth, overwriting', err)
-        }
-      }
       await persist(input)
-      Logger.info(`singleSessionPostgres: saved state for session ${sessionId}`)
     } catch (e) {
       Logger.error('singleSessionPostgres: persist failed', e)
     }
@@ -84,9 +84,11 @@ export async function singleSessionPostgres(sessionId: string, connectionString:
 
   return {
     state: {
-      creds,
+      get creds() {
+        return creds
+      },
       keys: {
-        get: (type: keyof SignalDataTypeMap, ids: string[]) => {
+        get: async (type: keyof SignalDataTypeMap, ids: string[]) => {
           const key = KEY_MAP[type]
           return ids.reduce((dict: any, id: string) => {
             let value = keys[key]?.[id]
@@ -110,7 +112,9 @@ export async function singleSessionPostgres(sessionId: string, connectionString:
         },
       },
     },
-    saveState,
+    saveState: async () => {
+      return saveState()
+    },
     deleteSession: async () => {
       try {
         await db.deleteMany('wa_auth', { session_id: sessionId })

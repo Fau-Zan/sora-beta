@@ -1,5 +1,5 @@
 import { Pool, QueryResult, PoolClient } from 'pg'
-import { Logger, globalQueue } from '../utils'
+import { Logger, globalQueue } from '../../utils'
 
 export type PostgresBaseOpts = {
   connectionString: string

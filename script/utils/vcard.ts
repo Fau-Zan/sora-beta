@@ -1,4 +1,4 @@
-import { isJidUser, jidDecode } from '@whiskeysockets/baileys';
+import { isLidUser, jidDecode } from '@whiskeysockets/baileys';
 import { parsePhoneNumber } from 'libphonenumber-js';
 export class VCard {
       public FN: string;
@@ -30,7 +30,7 @@ export class VCard {
 
       build() {
             let { FN, ORG, item } = this;
-            item.tel = isJidUser(item.tel) ? jidDecode(item.tel)!.user : item.tel;
+            item.tel = isLidUser(item.tel) ? jidDecode(item.tel)!.user : item.tel;
             const formatPhone = parsePhoneNumber('+' + item.tel);
             let firstCard = 'BEGIN:VCARD';
             let version = 'VERSION:3.0';

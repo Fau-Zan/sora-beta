@@ -1,4 +1,5 @@
 import { Config, Cmd, BaseCommand } from '../../base';
+import { WAMessage } from '@whiskeysockets/baileys';
 import y2mate, { type Track } from '../../plugins/youtube';
 
 @Config()
@@ -26,9 +27,9 @@ export class command extends BaseCommand {
                   this.downloadFromURI(this.query.parsed, this.ext, (res) => {
                         const res_url = res.url;
                         return void (this.ext == 'mp4'
-                              ? this.client.sendVideo(this.M.from, res_url, { quoted: this.M })
+                              ? this.client.sendVideo(this.M.from, res_url, { quoted: this.M as WAMessage })
                               : this.client.sendMessage<'audioMessage'>(this.M.from, res_url, 'audioMessage', {
-                                      quoted: this.M,
+                                      quoted: this.M as WAMessage,
                                       mimetype: 'audio/mpeg',
                                 }));
                   });

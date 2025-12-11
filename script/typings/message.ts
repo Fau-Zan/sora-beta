@@ -1,7 +1,10 @@
 import { MiscMessageGenerationOptions, proto, WAProto } from '@whiskeysockets/baileys';
+import type { WAMessage, WAMessageKey } from '@whiskeysockets/baileys';
+
 declare module 'violet' {
       namespace Whatsapp {
-            type IMessage = proto.IWebMessageInfo & Partial<Message>;
+            // Make IMessage compatible with both IWebMessageInfo and WAMessage
+            type IMessage = (proto.IWebMessageInfo | WAMessage) & Partial<Message>;
             export type IClient = import('../listeners').Message['client'];
             export type IWaMess = import('../listeners').Message['M'];
             export interface ExtraContents {

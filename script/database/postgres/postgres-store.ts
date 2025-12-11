@@ -9,8 +9,8 @@ import type {
   WAMessageKey,
   WAMessageUpdate,
 } from '@whiskeysockets/baileys'
-import { Logger } from '../utils'
-import { PostgresBase } from '../database'
+import { Logger } from '../../utils'
+import { PostgresBase } from '..'
 
 export type PostgresStoreOptions = {
   namespace?: string
@@ -40,7 +40,6 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
 
   const db = await new PostgresBase({ connectionString: opts.connectionString, serializeWrites: true }).connect()
 
-  // Create tables if not exist
   await db.ensureTable(
     `${ns}_chats`,
     `
@@ -116,7 +115,6 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     messages: new Map<string, any>(),
   }
 
-  // Helper to extract schema fields and store extra fields in data JSONB
   const mapChatDoc = (c: Chat) => {
     const schemaFields = ['id', 'name', 'unreadCount', 'lastMessage', 'lastMessageRecvTimestamp', 'lastMessageSentTimestamp', 'liveLocationJid', 'isLiveLocationActive', 'conversationTimestamp', 'muteEndTime', 'isMuted', 'isMarkedSpam', 'isArchived', 'canFan', 'isPin', 'archive']
     const excludeFields = ['messages'] // Fields to never store even in data JSONB
@@ -149,6 +147,30 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
       if (schemaFields.includes(key)) {
         doc[key] = value
       } else if (key !== 'id') {
+        extraData[key] = value
+      }
+    }
+    
+    if (Object.keys(extraData).length > 0) {
+      doc.data = extraData
+    }
+    return doc
+  }
+
+  const mapMessageDoc = (m: any, keyId?: string) => {
+    const schemaFields = ['keyId', 'remoteJid', 'type', 'messageTimestamp', 'message', 'deleted']
+    const doc: any = {}
+    const extraData: any = {}
+    
+    // Set keyId
+    if (keyId) {
+      doc.keyId = keyId
+    }
+    
+    for (const [key, value] of Object.entries(m)) {
+      if (schemaFields.includes(key)) {
+        doc[key] = value
+      } else if (key !== 'keyId') {
         extraData[key] = value
       }
     }
@@ -333,7 +355,8 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
           const keyId = u.key?.id
           if (!keyId) continue
           const curr = mem.messages.get(keyId) ?? { keyId, remoteJid: u.key?.remoteJid || '' }
-          const doc = { ...curr, ...u }
+          const mapped = mapMessageDoc(u, keyId)
+          const doc = { ...curr, ...mapped }
           mem.messages.set(keyId, doc)
           msgsBatch.set(keyId, doc)
         }
@@ -350,7 +373,8 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
             const keyId = k.id
             if (!keyId) continue
             const curr = mem.messages.get(keyId)
-            const doc = { ...(curr ?? { keyId, remoteJid: k.remoteJid || '' }), deleted: true }
+            const mapped = mapMessageDoc({ deleted: true }, keyId)
+            const doc = { ...(curr ?? { keyId, remoteJid: k.remoteJid || '' }), ...mapped }
             mem.messages.set(keyId, doc)
             msgsBatch.set(keyId, doc)
           }
@@ -358,7 +382,8 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
           const target = d.jid
           for (const [id, val] of mem.messages) {
             if (val?.remoteJid === target) {
-              const doc = { ...val, deleted: true }
+              const mapped = mapMessageDoc({ deleted: true }, id)
+              const doc = { ...val, ...mapped }
               mem.messages.set(id, doc)
               msgsBatch.set(id, doc)
             }

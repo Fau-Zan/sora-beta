@@ -7,13 +7,14 @@ import {
       WAProto,
       WASocket,
       isJidGroup,
-      isJidUser,
+      isLidUser,
       proto,
 } from '@whiskeysockets/baileys';
 import util from 'util';
 import { BuildEvents } from '../base';
 import { spawn } from 'child_process';
 import { functions } from '../utils';
+import * as postgres from '../database/postgres';
 
 type CurrentMessageType = keyof typeof WAProto.Message.prototype;
 export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
@@ -29,6 +30,7 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             return new Cache();
       }
 
+      public postgresdb = postgres;
       public sock: WASocket;
       public get MessageType() {
             return {} as { [K in CurrentMessageType]: string };
@@ -47,7 +49,7 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
                               : Buffer.isBuffer(valueContent)
                               ? valueContent
                               : (await functions.getFile(valueContent)).data,
-                  jid = isJidGroup(msgJid) ? msgJid : isJidUser(msgJid) ? this.parseJid(msgJid) : String(msgJid);
+                  jid = isJidGroup(msgJid) ? msgJid : isLidUser(msgJid) ? this.parseJid(msgJid) : String(msgJid);
             switch (messageMethod) {
                   case 'conversation':
                         fullMsg = {

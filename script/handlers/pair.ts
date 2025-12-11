@@ -3,11 +3,16 @@ import type { Whatsapp as Wa } from 'violet';
 import similarity from 'similarity';
 import micro from 'micromatch';
 import _ from 'lodash';
-import { functions } from '../utils';
+import { functions, Logger } from '../utils';
 
 export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: Wa.IWaMess }) {
       client = client;
       this.M = M;
+      
+      // Log message type and content
+      const msgType = M.type || 'unknown';
+      const msgContent = M.body || M.message?.toString() || '[no content]';
+      Logger.info(`📨 Message - Type: ${msgType} | From: ${M.from} | Content: ${msgContent.substring(0, 100)}${msgContent.length > 100 ? '...' : ''}`);
       let prefix = '?';
       let [cmd, ...args] = String(M.body).split(/ +/),
             full_query = args.join(' ');
@@ -106,7 +111,6 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
             ))
       }
 
-      console.log(M.body)
       for (let events of this.events) {
             events = await import(events);
             events = events[_.keys(events)[0]];
@@ -135,17 +139,12 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
                               : false
                         : undefined;
                   if (!isValid) continue;
-                 // if (plugin.acc?.owner && !client.owner.find((r) => r.number === jidDecode(M.sender).user)) continue;
-                   console.log(1)
                   if (plugin.acc?.admin && !M.admin) {
                         return client.sendMessage(M.from, 'this command can be used for admin', 'conversation', {
                               quoted: M,
                         });
                   }
-                   console.log(3)
                   if (plugin.acc?.textOrQuotedText && !query.full) continue;
-                  console.log(4)
-                  console.log(plugin)
                   return void (await plugin
                         .bind(events)(events)
                         .catch((_th) => {

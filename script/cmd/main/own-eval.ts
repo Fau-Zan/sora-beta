@@ -34,9 +34,7 @@ export class Command extends BaseCommand {
                   ev = await eval(`(async () => { ${query.full}})()`);
             } catch (e: any) {
                   ev = e.message;
-                  console.log(ev)
             }
-            console.log(ev)
             return void (await this.replyText(format(ev)));
       }
       @Cmd('($)', {

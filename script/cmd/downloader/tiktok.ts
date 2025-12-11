@@ -1,4 +1,5 @@
 import { Config, Cmd, BaseCommand } from '../../base';
+import { WAMessage } from '@whiskeysockets/baileys';
 
 @Config()
 export class command extends BaseCommand {
@@ -27,9 +28,9 @@ export class command extends BaseCommand {
                               this.ext == 'mp4' ? 'media/play/' + id + '.' + this.ext : 'music/' + id + '.' + this.ext
                         }`;
                         return void (this.ext == 'mp4'
-                              ? this.client.sendVideo(this.M.from, url, { quoted: this.M })
+                              ? this.client.sendVideo(this.M.from, url, { quoted: this.M as WAMessage })
                               : this.client.sendMessage<'audioMessage'>(this.M.from, url, 'audioMessage', {
-                                      quoted: this.M,
+                                      quoted: this.M as WAMessage,
                                       mimetype: 'audio/mpeg',
                                 }));
                   });

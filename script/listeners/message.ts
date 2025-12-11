@@ -11,6 +11,7 @@ import {
   getContentType,
   MessageUpsertType,
   WAProto,
+  WAMessage,
 } from '@whiskeysockets/baileys'
 import { BaseClient } from '../handlers'
 import type { Whatsapp } from 'violet'
@@ -95,7 +96,7 @@ class Message {
       this.M.body = (this.M.body)?.trim?.().length === 0 ? undefined : this.M.body
 
       this.M.downloadMediaMsg = (type: 'stream' | 'buffer' = 'buffer') => {
-        return downloadMediaMessage(this.M, type, {
+        return downloadMediaMessage(this.M as WAMessage, type, {
           startByte: undefined,
           endByte: undefined,
         }) as Promise<Buffer>
@@ -115,9 +116,7 @@ class Message {
         const getContextInfo = this.messageContextInfo
 
         const quotedId = getContextInfo.stanzaId!
-        console.log(quotedId)
         const quotedRaw = await this.fetchQuotedFromStore(quotedId)
-        console.log(quotedRaw)
 
         this.M.quoted = {
           get message() {
@@ -132,7 +131,7 @@ class Message {
                   key: quotedRaw.key,
                   message: quotedRaw.message,
                   downloadMediaMsg: (type: 'stream' | 'buffer' = 'buffer') =>
-                    downloadMediaMessage(quotedRaw, type, {
+                    downloadMediaMessage(quotedRaw as WAMessage, type, {
                       startByte: undefined,
                       endByte: undefined,
                     }) as Promise<Buffer>,

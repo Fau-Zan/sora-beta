@@ -27,7 +27,7 @@ export class BuildEvents<O extends {} = EventMap> {
 
       setMaxListeners(count: number) {
             if (count === -1)
-                  console.warn(
+                  functions.logger.warn(
                         `Regard:${process.pid}) Notice: You have set the count to \`-1\`, this is not recommended and can cause callstack errors.`,
                   );
 
