@@ -2,6 +2,7 @@ import * as baileys from '@whiskeysockets/baileys'
 import type { AuthenticationCreds, SignalDataTypeMap } from '@whiskeysockets/baileys'
 import { PostgresBase } from './postgres'
 import { Logger } from '../utils'
+import { start } from 'repl'
 
 const { proto, BufferJSON, initAuthCreds } = baileys
 
@@ -63,15 +64,19 @@ export async function singleSessionPostgres(sessionId: string, connectionString:
 
   const saveState = async () => {
     try {
+      Logger.info(`singleSessionPostgres: saving state for session ${sessionId}`)
       const existing = await db.findOne<AuthDoc>('wa_auth', { session_id: sessionId })
       let input = { creds, keys }
       if (existing?.auth) {
         try {
           const current = JSON.parse(existing.auth, BufferJSON.reviver)
           input = Object.assign({}, current, input)
-        } catch {}
+        } catch (err) {
+          Logger.warn('singleSessionPostgres: failed to parse existing auth, overwriting', err)
+        }
       }
       await persist(input)
+      Logger.info(`singleSessionPostgres: saved state for session ${sessionId}`)
     } catch (e) {
       Logger.error('singleSessionPostgres: persist failed', e)
     }

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv'
+dotenv.config({ path: '.env' })
 dotenv.config({ path: 'env' })
 import * as Listener from './listeners'
 import { BaseClient, Pair } from './handlers'
@@ -17,7 +18,10 @@ const rl = readline.createInterface({ input: process.stdin, output: process.stdo
 const question = (text: string) => new Promise<string>((resolve) => rl.question(text, resolve))
 
 export async function autoStart(configName: string = 'zan', usePair: boolean = false) {
-  const POSTGRES_URL = process.env.POSTGRES_URL!
+  const POSTGRES_URL = process.env.POSTGRES_URL
+  if (!POSTGRES_URL) {
+    throw new Error('POSTGRES_URL is not set. Please define it in .env or environment.')
+  }
 
   const { state, saveState, deleteSession } = await singleSessionPostgres(configName, POSTGRES_URL)
 
@@ -80,7 +84,13 @@ export async function autoStart(configName: string = 'zan', usePair: boolean = f
     } else if (connection === 'open') {
       console.log('✅ Connection established')
       client.store.bind(client.sock.ev)
-      await client.store.load()
+      client.store.load()
+      try {
+        await saveState()
+        console.log('Auth state saved to Postgressssssssssssssssssss')
+      } catch (e) {
+        console.error('Failed to save auth state after open:', e)
+      }
     } else if (connection === 'connecting') {
       console.log('🔄 Connecting...')
     }
@@ -107,7 +117,9 @@ export async function autoStart(configName: string = 'zan', usePair: boolean = f
   })
 
   client.sock.ev.on('creds.update', (creds: Partial<AuthenticationCreds>) => {
-    if (creds) creds
+    try {
+      console.log('event: creds.update', Object.keys(creds || {}).join(','))
+    } catch {}
     return saveState()
   })
 }

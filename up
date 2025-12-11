@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 IFS=$'\n\t'
 
-# Simple helper to add/commit/push current branch with nicer UX
 
 DEFAULT_MSG="Update from up.sh"
 FORCE=1
@@ -35,7 +33,6 @@ echo_err() { echo -e "${RED}${1}${RESET}"; }
 
 msg="${DEFAULT_MSG}"
 
-# Parse flags
 while [[ ${#} -gt 0 ]]; do
     case "$1" in
         -m|--message)

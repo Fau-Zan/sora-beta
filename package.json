@@ -15,6 +15,8 @@
     "start:dev": "yarn run clean && yarn start",
     "start:pm2": "pm2 start .pm2-process.json",
     "stop:pm2": "pm2 stop .pm2-process.json",
+    "delete-wa-session": "node delete-wa-session.cjs",
+    "delete-wa-session:dry": "node delete-wa-session.cjs --dry-run",
     "test": "yarn build && mocha \"./lib/test/**/*.spec.js\"",
     "test:watch": "yarn build && mocha --watch \"./lib/test/**/*.spec.js\""
   },
