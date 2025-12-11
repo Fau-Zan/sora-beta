@@ -4,21 +4,22 @@ import * as Listener from './listeners'
 import { BaseClient, Pair } from './handlers'
 import type { AuthenticationCreds, ConnectionState, UserFacingSocketConfig, MessageUpsertType, proto } from '@whiskeysockets/baileys'
 import MainStart, { fetchLatestBaileysVersion, makeCacheableSignalKeyStore, SignalKeyStore } from '@whiskeysockets/baileys'
-import { singleSessionMongo } from './database'
-import { createMongoStore } from "./handlers"
+import { singleSessionPostgres } from './database'
+import { createPostgresStore } from "./handlers"
 import { functions } from './utils'
 import NodeCache from 'node-cache'
 import readline from 'readline'
+import { promises as fs } from 'fs'
+import path from 'path'
 
 const msgRetryCounterCache = new NodeCache()
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 const question = (text: string) => new Promise<string>((resolve) => rl.question(text, resolve))
 
 export async function autoStart(configName: string = 'zan', usePair: boolean = false) {
-  const MONGO_URI = process.env.MONGO_URI!
-  const MONGO_DB = process.env.MONGO_DB || 'violet'
+  const POSTGRES_URL = process.env.POSTGRES_URL!
 
-  const { state, saveState } = await singleSessionMongo(configName, MONGO_URI, MONGO_DB)
+  const { state, saveState, deleteSession } = await singleSessionPostgres(configName, POSTGRES_URL)
 
   const config: UserFacingSocketConfig = {
     auth: {
@@ -34,7 +35,7 @@ export async function autoStart(configName: string = 'zan', usePair: boolean = f
     generateHighQualityLinkPreview: true,
   }
 
-  const store = await createMongoStore({ namespace: 'wa', uri: MONGO_URI, dbName: MONGO_DB })
+  const store = await createPostgresStore({ namespace: 'wa', connectionString: POSTGRES_URL })
 
   const client = new BaseClient()
   client.sock = (MainStart as any).default(config)
@@ -47,17 +48,41 @@ export async function autoStart(configName: string = 'zan', usePair: boolean = f
   }
 
   client.sock.ev.on('connection.update', async (arg: Partial<ConnectionState>) => {
-    const { connection } = arg
-    switch (connection) {
-      case 'close':
-        autoStart()
-        break
-      case 'open':
-        client.store.bind(client.sock.ev)
-        await client.store.load()
-        break
-      case 'connecting':
-        console.log('connecting...')
+    const { connection, lastDisconnect } = arg
+    
+    if (connection === 'close') {
+      const shouldReconnect = (lastDisconnect?.error as any)?.output?.statusCode !== 401
+      
+      if (!shouldReconnect) {
+        try {
+          console.log('Session unauthorized (401). Deleting auth from PostgreSQL and restarting...')
+          await deleteSession()
+          const authPath = path.join(process.cwd(), 'auth', configName)
+          await fs.rm(authPath, { recursive: true, force: true })
+          console.log('✅ Session deleted from PostgreSQL and filesystem. Restarting in 3s...')
+          
+          await new Promise(resolve => setTimeout(resolve, 3000))
+          autoStart(configName, usePair)
+        } catch (err) {
+          console.error('Error deleting session:', err)
+          autoStart(configName, usePair)
+        }
+      } else {
+        try {
+          console.log('Connection error detected. retrying...')
+          await new Promise(resolve => setTimeout(resolve, 3000))
+          autoStart(configName, usePair)
+        } catch (err) {
+          console.error('Error deleting auth:', err)
+          autoStart(configName, usePair)
+        }
+      }
+    } else if (connection === 'open') {
+      console.log('✅ Connection established')
+      client.store.bind(client.sock.ev)
+      await client.store.load()
+    } else if (connection === 'connecting') {
+      console.log('🔄 Connecting...')
     }
   })
 
@@ -88,5 +113,3 @@ export async function autoStart(configName: string = 'zan', usePair: boolean = f
 }
 
 autoStart()
-      .then(() => console.log('Violet started!'))
-      .catch((err) => console.error('Violet failed:', err))

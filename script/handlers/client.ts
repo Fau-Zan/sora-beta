@@ -173,7 +173,7 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             });
       }
 
-      public store: WhatsType.IMongoStore;
+      public store: WhatsType.IPostgresStore;
 
       public editMessage(key: proto.IMessageKey, str: string) {
             if (key.id)
