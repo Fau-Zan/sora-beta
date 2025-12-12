@@ -37,6 +37,7 @@ declare module 'violet' {
 export async function createPostgresStore(opts: PostgresStoreOptions) {
   const ns = (opts.namespace ?? 'wa').replace(/:$/, '')
   const debounceMs = opts.debounceMs ?? 1000  // Increase from 300ms to 1000ms for better batching
+  const skipMessages = process.env.SKIP_STORE_MESSAGES === 'true'
 
   const db = await new PostgresBase({ connectionString: opts.connectionString, serializeWrites: true }).connect()
 
@@ -86,28 +87,34 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     `
   )
 
-  await db.ensureTable(
-    `${ns}_messages`,
-    `
-      "keyId" VARCHAR(255) PRIMARY KEY,
-      "remoteJid" VARCHAR(255),
-      type TEXT,
-      "messageTimestamp" BIGINT,
-      message JSONB,
-      deleted BOOLEAN DEFAULT FALSE,
-      data JSONB,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    `
-  )
+  if (!skipMessages) {
+    await db.ensureTable(
+      `${ns}_messages`,
+      `
+        "keyId" VARCHAR(255) PRIMARY KEY,
+        "remoteJid" VARCHAR(255),
+        type TEXT,
+        "messageTimestamp" BIGINT,
+        body TEXT,
+        message JSONB,
+        deleted BOOLEAN DEFAULT FALSE,
+        data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      `
+    )
+    await db.query(`ALTER TABLE ${ns}_messages ADD COLUMN IF NOT EXISTS "body" TEXT`)
+  }
 
   await db.ensureIndexes(`${ns}_chats`, [{ columns: ['id'], unique: true }])
   await db.ensureIndexes(`${ns}_contacts`, [{ columns: ['id'], unique: true }])
-  await db.ensureIndexes(`${ns}_messages`, [
-    { columns: ['keyId'], unique: true },
-    { columns: ['remoteJid', 'keyId'] },
-    { columns: ['messageTimestamp'] },
-  ])
+  if (!skipMessages) {
+    await db.ensureIndexes(`${ns}_messages`, [
+      { columns: ['keyId'], unique: true },
+      { columns: ['remoteJid', 'keyId'] },
+      { columns: ['messageTimestamp'] },
+    ])
+  }
 
   const mem = {
     chats: new Map<string, any>(),
@@ -161,8 +168,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     const schemaFields = ['keyId', 'remoteJid', 'type', 'messageTimestamp', 'message', 'deleted']
     const doc: any = {}
     const extraData: any = {}
-    
-    // Set keyId
+  
     if (keyId) {
       doc.keyId = keyId
     }
@@ -209,13 +215,13 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
 
   const flush = async (kind: 'chat' | 'contact' | 'msg') => {
     try {
+      if (kind === 'msg' && skipMessages) return
       const batch = kind === 'chat' ? chatsBatch : kind === 'contact' ? contactsBatch : msgsBatch
       if (!batch.size) return
       const docs = Array.from(batch.values())
       const tableName = kind === 'msg' ? `${ns}_messages` : `${ns}_${kind === 'chat' ? 'chats' : 'contacts'}`
       const idKey = kind === 'msg' ? 'keyId' : 'id'
       
-      // Debug: log first doc keys
       if (docs.length > 0 && kind === 'chat') {
         const keys = Object.keys(docs[0])
         Logger.debug?.(`flush(${kind}): doc keys = [${keys.join(', ')}]`)
@@ -237,7 +243,6 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     }
   }
 
-  // API: single getters ---------------------------------------------------
   async function getChat(chatId: string) {
     if (mem.chats.has(chatId)) return mem.chats.get(chatId)
     try {
@@ -333,6 +338,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     })
 
     ev.on('messages.upsert', (arg: { messages: proto.IWebMessageInfo[]; type: MessageUpsertType; requestId?: string }) => {
+        if (skipMessages) return
       try {
         const { messages, type } = arg
         for (const m of messages) {
@@ -350,6 +356,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     })
 
     ev.on('messages.update', (updates: WAMessageUpdate[]) => {
+        if (skipMessages) return
       try {
         for (const u of updates) {
           const keyId = u.key?.id
@@ -367,6 +374,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     })
 
     ev.on('messages.delete', (d: { keys: WAMessageKey[] } | { jid: string; all: true }) => {
+        if (skipMessages) return
       try {
         if ('keys' in d) {
           for (const k of d.keys) {

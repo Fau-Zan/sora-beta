@@ -2,6 +2,7 @@ import fs from 'fs';
 import axios from 'axios';
 import { cleanEnv, str } from 'envalid';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import { config } from 'dotenv';
 import FormData from 'form-data';
 import { fileTypeFromBuffer } from 'file-type';
@@ -10,11 +11,16 @@ import pino from 'pino';
 
 config();
 class Functions {
+      private async importFresh(modulePath: string): Promise<any> {
+            // Convert to file URL and append cache-busting query param
+            const fileUrl = pathToFileURL(modulePath).href + `?t=${Date.now()}`;
+            return import(fileUrl);
+      }
       public parseCmd = async () => {
             const dir: any[] = functions.walk(path.join(process.cwd(), 'lib', 'cmd'));
             let property: Map<string, Whatsapp.CmdProperty>[] = [];
             for (let event of dir) {
-                  event = await import(event);
+                  event = await this.importFresh(event);
                   event = Object.values(event)[0];
                   event = event.prototype.property as Map<string, Whatsapp.CmdProperty>;
                   if (event) property.push(event);
@@ -105,13 +111,13 @@ class Functions {
                   ? PATH
                   : Buffer.alloc(0);
             if (!Buffer.isBuffer(data)) throw new TypeError('Result is not a buffer');
-            const type = (await fileTypeFromBuffer(data)) || {
+            const type = (await fileTypeFromBuffer(new Uint8Array(data))) || {
                   mime: 'application/octet-stream',
                   ext: '.bin',
             };
             if (data && saveToFile && !filename)
                   (filename = path.join(process.cwd(), '../tmp/' + new Date() + '.' + type.ext)),
-                        await fs.promises.writeFile(filename, data);
+                        await fs.promises.writeFile(filename, new Uint8Array(data));
             return {
                   res,
                   filename,
