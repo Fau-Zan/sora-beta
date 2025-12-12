@@ -36,7 +36,7 @@ declare module 'violet' {
 
 export async function createPostgresStore(opts: PostgresStoreOptions) {
   const ns = (opts.namespace ?? 'wa').replace(/:$/, '')
-  const debounceMs = opts.debounceMs ?? 300
+  const debounceMs = opts.debounceMs ?? 1000  // Increase from 300ms to 1000ms for better batching
 
   const db = await new PostgresBase({ connectionString: opts.connectionString, serializeWrites: true }).connect()
 

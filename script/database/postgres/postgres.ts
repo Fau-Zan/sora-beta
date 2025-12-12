@@ -123,27 +123,40 @@ export class PostgresBase {
   async bulkUpsert<T extends Record<string, any>>(tableName: string, docs: T[], identifierKey: keyof T): Promise<any> {
     if (!docs.length) return { rowCount: 0 }
 
-    return this.transaction(async (client) => {
-      let totalRows = 0
-      for (const doc of docs) {
-        const columns = Object.keys(doc)
-        const values = Object.values(doc)
-        const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ')
-        const quotedColumns = columns.map(col => this.quoteColumn(col))
-        const updateSet = columns.map((col, i) => `${this.quoteColumn(col)} = $${i + 1}`).join(', ')
-        const quotedIdKey = this.quoteColumn(identifierKey as string)
+    // Use batch insert instead of transaction loop for better performance
+    const columns = Object.keys(docs[0])
+    const quotedColumns = columns.map(col => this.quoteColumn(col))
+    const quotedIdKey = this.quoteColumn(identifierKey as string)
+    
+    // Build values placeholder for all docs
+    let valueIndex = 1
+    const valuesArray: any[] = []
+    const valuePlaceholders = docs.map(doc => {
+      const docValues = columns.map(col => doc[col])
+      valuesArray.push(...docValues)
+      const placeholders = columns.map(() => `$${valueIndex++}`).join(', ')
+      return `(${placeholders})`
+    }).join(', ')
 
-        const sql = `
-          INSERT INTO ${tableName} (${quotedColumns.join(', ')})
-          VALUES (${placeholders})
-          ON CONFLICT (${quotedIdKey}) DO UPDATE SET ${updateSet}
-        `
+    // Build UPDATE SET clause
+    const updateSet = columns
+      .filter(col => col !== identifierKey)
+      .map(col => `${this.quoteColumn(col)} = EXCLUDED.${this.quoteColumn(col)}`)
+      .join(', ')
 
-        const result = await client.query(sql, values)
-        totalRows += result.rowCount || 0
-      }
-      return { rowCount: totalRows }
-    })
+    const sql = `
+      INSERT INTO ${tableName} (${quotedColumns.join(', ')})
+      VALUES ${valuePlaceholders}
+      ON CONFLICT (${quotedIdKey}) DO UPDATE SET ${updateSet}
+    `
+
+    try {
+      const result = await this.pool.query(sql, valuesArray)
+      return { rowCount: result.rowCount }
+    } catch (err) {
+      Logger.error(`bulkUpsert failed for ${tableName}: ${err}`)
+      throw err
+    }
   }
 
   async findOne<T extends Record<string, any>>(tableName: string, where: Partial<T>): Promise<T | null> {

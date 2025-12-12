@@ -63,6 +63,7 @@ class Functions {
       }
       get logger() {
             const pinoLogger = {
+                  level: 'silent', // Set to 'silent' to suppress Baileys warnings, or 'error' to only show errors
                   base: undefined,
                   transport: {
                         target: 'pino-pretty',

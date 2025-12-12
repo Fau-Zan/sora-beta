@@ -11,7 +11,7 @@ import {
       proto,
 } from '@whiskeysockets/baileys';
 import util from 'util';
-import { BuildEvents } from '../base';
+import { BuildEvents } from '.';
 import { spawn } from 'child_process';
 import { functions } from '../utils';
 import * as postgres from '../database/postgres';

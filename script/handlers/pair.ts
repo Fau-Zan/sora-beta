@@ -8,11 +8,14 @@ import { functions, Logger } from '../utils';
 export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: Wa.IWaMess }) {
       client = client;
       this.M = M;
-      
-      // Log message type and content
       const msgType = M.type || 'unknown';
-      const msgContent = M.body || M.message?.toString() || '[no content]';
-      Logger.info(`📨 Message - Type: ${msgType} | From: ${M.from} | Content: ${msgContent.substring(0, 100)}${msgContent.length > 100 ? '...' : ''}`);
+      
+      // Skip logging for protocol messages (system messages like delete, edit, etc)
+      if (msgType !== 'protocolMessage') {
+        const msgContent = M.body || '[no text content]';
+        Logger.info(`📨 Message - Type: ${msgType} | From: ${M.from} | Content: ${msgContent.substring(0, 100)}${msgContent.length > 100 ? '...' : ''}`);
+      }
+      
       let prefix = '?';
       let [cmd, ...args] = String(M.body).split(/ +/),
             full_query = args.join(' ');

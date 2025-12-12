@@ -75,7 +75,7 @@ export class command extends BaseCommand {
                   const prefix = '?';
                   if (jsonFormat?.isviolet) {
                         const M = this.M;
-                        M.body = prefix + jsonFormat?.cmd + ' ' + jsonFormat?.advance ?? '';
+                        M.body = prefix + (jsonFormat?.cmd ?? '') + (jsonFormat?.advance ? ' ' + jsonFormat.advance : '');
                         return void this.client.emit('pair.cmd', { M, client: this.client });
                   } else return void null;
             } catch (e) {
