@@ -16,6 +16,14 @@ import {
 import { BaseClient } from '../handlers'
 import type { Whatsapp } from 'violet'
 import { Logger } from '../utils'
+import { LevelingStore } from '../database/postgres/leveling'
+
+const LAST_EXP_AT = new Map<string, number>()
+const EXP_PER_MESSAGE = 12
+const COIN_PER_MESSAGE = 1
+const EXP_COOLDOWN_MS = 30_000
+const MIN_BODY_LENGTH = 6
+const ALLOWED_MESSAGE_TYPES = new Set(['conversation', 'extendedTextMessage'])
 
 interface IPouchMessageDoc {
   keyId: string
@@ -59,11 +67,13 @@ class Message {
         ? normalizeMessageContent(this.M.message)
         : this.M.message
 
-      this.M.sender = this.M.key.fromMe
+      const rawSender = this.M.key.fromMe
         ? BotWaNumber
         : (this.M.key.participant ?? (this.M).participant ?? this.M.key.remoteJid)!
+      this.M.sender = jidNormalizedUser(rawSender)
 
-      this.M.from = isJidGroup(this.M.key.remoteJid!) ? (this.M.key.remoteJid as string) : (this.M.sender as string)
+      const rawFrom = this.M.key.remoteJid as string
+      this.M.from = isJidGroup(rawFrom) ? rawFrom : this.M.sender
       this.M.isGroup = this.isInGroup
 
       if (this.M.isGroup) {
@@ -103,6 +113,9 @@ class Message {
       }
 
       this.M.messageContextInfo = this.messageContextInfo
+      this.M.mention = Array.isArray(this.messageContextInfo?.mentionedJid)
+        ? (this.messageContextInfo!.mentionedJid as string[]).map((j) => jidNormalizedUser(j))
+        : []
       if (this.messageContextInfo) {
         const emitOnTagAll = () => {
           this.client.emit('message.tag', {
@@ -166,6 +179,8 @@ class Message {
         }
       }
 
+      await this.handleLevelingExpTick().catch((err) => Logger.error('leveling exp tick failed', err))
+
       await this.client.sock.readMessages([this.M.key])
       if (this.emitNewMessage()) return void (await null)
     } catch (error) {
@@ -223,6 +238,22 @@ class Message {
 
   private async isAdmin(user: string) {
     return this.isInGroup ? (await this.getAdmin()).find((predicate) => predicate === user) !== undefined : false
+  }
+
+  private async handleLevelingExpTick() {
+    const POSTGRES_URL = process.env.POSTGRES_URL
+    if (!POSTGRES_URL) return
+    if (!this.M?.sender || this.M.isBotSending) return
+    if (!this.M.body || !this.M.type || !ALLOWED_MESSAGE_TYPES.has(this.M.type)) return
+    if (this.M.body.length < MIN_BODY_LENGTH) return
+
+    const now = Date.now()
+    const last = LAST_EXP_AT.get(this.M.sender)
+    if (last && now - last < EXP_COOLDOWN_MS) return
+    LAST_EXP_AT.set(this.M.sender, now)
+
+    const store = await LevelingStore.getInstance(POSTGRES_URL)
+    await store.addExp(this.M.sender as string, EXP_PER_MESSAGE, 1, COIN_PER_MESSAGE)
   }
 }
 

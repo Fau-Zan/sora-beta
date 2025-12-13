@@ -74,6 +74,7 @@ interface Message extends proto.IWebMessageInfo {
             result_parsed: import('violet').Whatsapp.ExtraContents['modify'];
             text_parsed: string;
       };
+      mention: string[];
       baileysID: boolean;
       isBotSending: boolean;
       forward: boolean;

@@ -4,13 +4,13 @@ import similarity from 'similarity';
 import micro from 'micromatch';
 import _ from 'lodash';
 import { functions, Logger } from '../utils';
+import { LevelingStore } from '../database/postgres/leveling';
 
 export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: Wa.IWaMess }) {
       client = client;
       this.M = M;
       const msgType = M.type || 'unknown';
       
-      // Skip logging for protocol messages (system messages like delete, edit, etc)
       if (msgType !== 'protocolMessage') {
         const msgContent = M.body || '[no text content]';
         Logger.info(`📨 Message - Type: ${msgType} | From: ${M.from} | Content: ${msgContent.substring(0, 100)}${msgContent.length > 100 ? '...' : ''}`);
@@ -112,6 +112,35 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
                         Math.round(sensitive * 100 * 100) / 100
                   }%`, { quoted: M }
             ))
+      }
+
+      const commandKey = cmd.startsWith(prefix) ? cmd.toLowerCase().slice(prefix.length) : '';
+      const allowUnregistered = new Set(['menu', 'list', 'help', 'profile', 'profil', 'level', 'register', 'daftar']);
+      if (commandKey && !allowUnregistered.has(commandKey)) {
+            const POSTGRES_URL = process.env.POSTGRES_URL;
+            if (!POSTGRES_URL) {
+                  await client.sendText(M.from, 'POSTGRES_URL belum di-set. Hubungi admin untuk mengaktifkan leveling.', {
+                        quoted: M,
+                  });
+                  return;
+            }
+
+            try {
+                  const store = await LevelingStore.getInstance(POSTGRES_URL);
+                  const player = await store.getPlayer(M.sender as string);
+                  if (!player || !player.is_registered) {
+                        await client.sendText(
+                              M.from,
+                              'Kamu belum terdaftar. Gunakan ?register <nama> <male|female> untuk mendaftar.',
+                              { quoted: M },
+                        );
+                        return;
+                  }
+            } catch (err) {
+                  Logger.error('leveling registration gate failed', err);
+                  await client.sendText(M.from, 'Leveling belum siap, coba lagi nanti.', { quoted: M });
+                  return;
+            }
       }
 
       for (let events of this.events) {
