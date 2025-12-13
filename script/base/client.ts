@@ -141,6 +141,14 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             return this.sock.sendMessage(jid, { react: { key: quotedKey, text: emoji } } as any)
       }
 
+      
+      /**
+       * Description placeholder
+       *
+       * @public
+       * @readonly
+       * @type {{}}
+       */
       public get owner() {
             return [
                   {
@@ -176,14 +184,26 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             ]
       }
 
+
       /**
-       * Send quick-reply/URL/Call buttons using hydrated template (templateMessage)
-       * buttons example:
-       * [
-       *   { type: 'reply', id: 'id_1', text: 'Yes' },
-       *   { type: 'url', text: 'Website', url: 'https://example.com' },
-       *   { type: 'call', text: 'Call Us', phoneNumber: '+6212345' }
-       * ]
+       * Description placeholder
+       *
+       * @public
+       * @async
+       * @param {string} to 
+       * @param {string} text 
+       * @param {Array<
+       *                   | { type: 'reply'; id: string; text: string }
+       *                   | { type: 'url'; text: string; url: string }
+       *                   | { type: 'call'; text: string; phoneNumber: string }
+       *             >} buttons 
+       * @param {?string} [footer] 
+       * @param {?MiscMessageGenerationOptions & {
+       *                   media?: { type: 'image' | 'video' | 'document'; data: Buffer | { url: string }; options?: any }
+       *                   title?: string
+       *                   subtitle?: string
+       *             }} [options] 
+       * @returns {Promise<WAProto.IWebMessageInfo>} 
        */
       public async sendButtons(
             to: string,
@@ -323,13 +343,7 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             return protoMsg as unknown as WAProto.IWebMessageInfo
       }
 
-      /**
-       * Send modern list (interactiveMessage) via shorthand sections
-       * sections example:
-       * [
-       *   { title: 'Category', rows: [ { id: 'row_1', title: 'Item 1', description: 'Desc' } ] }
-       * ]
-       */
+
       public async sendList(
             to: string,
             title: string,
@@ -419,6 +433,17 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             });
       }
 
+      
+      /**
+       * Description placeholder
+       *
+       * @public
+       * @template {WAProto.IMessage} Message 
+       * @param {string} to 
+       * @param {Message} message 
+       * @param {?string} [jid] 
+       * @returns {*} 
+       */
       public sendContentMessage<Message extends WAProto.IMessage>(to: string, message: Message, jid?: string) {
             const Proto = generateWAMessageFromContent(to, message as Message, {
                   userJid: jid ?? (this.sock.authState.creds.me?.id as string),
@@ -430,6 +455,15 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
 
       public store: WhatsType.IPostgresStore;
 
+      
+      /**
+       * Description placeholder
+       *
+       * @public
+       * @param {proto.IMessageKey} key 
+       * @param {string} str 
+       * @returns {*} 
+       */
       public editMessage(key: proto.IMessageKey, str: string) {
             if (key.id)
                   return this.sock.relayMessage(
@@ -447,12 +481,29 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
                   );
       }
 
+      
+      /**
+       * Description placeholder
+       *
+       * @public
+       * @param {string} jid 
+       * @returns {boolean} 
+       */
       public isOwner(jid: string): boolean {
             const normalized = this.parseJid(jid)
             const owners = this.owner.map((o) => this.parseJid(o.number + '@s.whatsapp.net'))
             return owners.includes(normalized)
       }
 
+      
+      /**
+       * Description placeholder
+       *
+       * @public
+       * @async
+       * @param {string} text 
+       * @returns {Promise<void>} 
+       */
       public async notifyOwners(text: string): Promise<void> {
             for (const o of this.owner) {
                   try {
@@ -462,10 +513,28 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             }
       }
 
+      
+      /**
+       * Description placeholder
+       *
+       * @param {string} url 
+       * @returns {*} 
+       */
       public parseURI = (url: string) =>
             JSON.parse('{"' + decodeURI(url.replace(/&/g, '","').replace(/=/g, '":"')) + '"}');
       public parseJid = (jid: string) => jidNormalizedUser(jid);
 
+      
+      /**
+       * Description placeholder
+       *
+       * @public
+       * @async
+       * @param {string} to 
+       * @param {(string | Buffer)} input 
+       * @param {?MiscMessageGenerationOptions} [options] 
+       * @returns {Promise<WAProto.IWebMessageInfo>} 
+       */
       public async sendFileAuto(
             to: string,
             input: string | Buffer,

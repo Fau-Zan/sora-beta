@@ -29,7 +29,6 @@ const usePairFlag = argv.includes('--pair') || argv.includes('-p') || process.en
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 const question = (text: string) => new Promise<string>((resolve) => rl.question(text, resolve))
 
-// Track active sessions that are in scan/pair process
 export const activeSessions = new Set<string>()
 
 export async function autoStart(
@@ -42,7 +41,6 @@ export async function autoStart(
     throw new Error('POSTGRES_URL is not set. Please define it in .env or environment.')
   }
 
-  // Mark session as active
   activeSessions.add(configName)
 
   const { state, saveState, deleteSession } = await singleSessionPostgres(configName, POSTGRES_URL)
