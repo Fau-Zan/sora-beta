@@ -1,6 +1,6 @@
 import { Config, Cmd, BaseCommand } from '../../base'
 import { Whatsapp } from 'violet'
-import { LevelingStore } from '../../database/postgres/leveling'
+import { getLevelingStore } from '../../database/postgres/leveling'
 import { computeLevel, statusTitle, nextStatusKey, getBracket } from '../../utils/leveling'
 
 @Config()
@@ -22,7 +22,7 @@ export class command extends BaseCommand {
     if (!POSTGRES_URL) return this.replyText('POSTGRES_URL belum di-set. Tambahkan ke environment.')
 
     try {
-      const store = await LevelingStore.getInstance(POSTGRES_URL)
+      const store = await getLevelingStore()
       const jid = this.M.sender as string
       const player = await store.getPlayer(jid)
       if (!player || !player.is_registered) {

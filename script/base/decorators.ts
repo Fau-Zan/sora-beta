@@ -24,6 +24,11 @@ export function Config() {
       };
 }
 
+export function All() {
+      return (target: any, _: string | symbol, descriptor: PropertyDescriptor) => {
+            target.allMethod = descriptor.value;
+      };
+}
 export function Cmd(cmd: string | string[], structure: Whatsapp.ICmd) {
       return (target: any, _: string | symbol, descriptor: PropertyDescriptor) => {
             function isValue(T: any) {

@@ -1,6 +1,6 @@
 import { Config, Cmd, BaseCommand } from '../../base'
 import { Whatsapp } from 'violet'
-import { LevelingStore } from '../../database/postgres/leveling'
+import { getLevelingStore } from '../../database/postgres/leveling'
 import { STATUS_BRACKETS } from '../../utils/leveling'
 
 @Config()
@@ -14,7 +14,7 @@ export class command extends BaseCommand {
     if (!POSTGRES_URL) return this.replyText('POSTGRES_URL belum di-set. Tambahkan ke environment.')
 
     try {
-      const store = await LevelingStore.getInstance(POSTGRES_URL)
+      const store = await getLevelingStore()
       if (patch.statusKey && !STATUS_BRACKETS.some((b) => b.statusKey === patch.statusKey)) {
         return this.replyText('Status tidak dikenal.')
       }

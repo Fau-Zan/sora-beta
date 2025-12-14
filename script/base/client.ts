@@ -543,13 +543,13 @@ export default class BaseClient extends BuildEvents<Clients.MessageEvent> {
             const file = await functions.getFile(input)
             const mime = file.mime || ''
             if (mime.startsWith('image/')) {
-                  return this.sendImage(to, file.data, options as any)
+                  return this.sendImage(to, file.data, options)
             } else if (mime.startsWith('video/')) {
-                  return this.sendVideo(to, file.data, options as any)
+                  return this.sendVideo(to, file.data, options)
             } else if (mime.startsWith('audio/')) {
-                  return this.sendAudio(to, file.data, options as any)
+                  return this.sendAudio(to, file.data, options)
             } else if (mime === 'image/webp') {
-                  return this.sendSticker(to, file.data, options as any)
+                  return this.sendSticker(to, file.data, options)
             } else {
                   return this.sendText(to, `Received file: ${file.filename || 'unknown'}`)
             }

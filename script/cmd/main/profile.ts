@@ -1,7 +1,7 @@
 import { Config, Cmd, BaseCommand } from '../../base'
 import { Whatsapp } from 'violet'
-import { LevelingStore } from '../../database/postgres/leveling'
-import { computeLevel, CUM_EXP, REQUIRED_EXP, nextStatusKey, statusTitle, getBracket } from '../../utils/leveling'
+import { getLevelingStore } from '../../database/postgres/leveling'
+import { computeLevel, CUM_EXP, REQUIRED_EXP, nextStatusKey, statusTitle, getBracket, getExpMultiplier } from '../../utils/leveling'
 
 @Config()
 export class command extends BaseCommand {
@@ -21,7 +21,7 @@ export class command extends BaseCommand {
     if (!POSTGRES_URL) return this.replyText('POSTGRES_URL belum di-set. Tambahkan ke environment.')
 
     try {
-      const store = await LevelingStore.getInstance(POSTGRES_URL)
+      const store = await getLevelingStore()
       const jid = this.M.sender as string
       const player = await store.getPlayer(jid)
       if (!player || !player.is_registered) {
@@ -32,6 +32,9 @@ export class command extends BaseCommand {
       const currentBracket = getBracket(player.status_key)
       const nextKey = nextStatusKey(player.status_key)
       const nextBracket = nextKey ? getBracket(nextKey) : null
+      const expMultiplier = getExpMultiplier(player.status_key)
+      const baseExp = 12
+      const buffedExp = Math.floor(baseExp * expMultiplier)
 
       const nextLevel = player.level + 1
       const expForNext = REQUIRED_EXP[nextLevel] ?? 0
@@ -46,6 +49,7 @@ export class command extends BaseCommand {
         `EXP: ${player.exp} (butuh ${expToNext} lagi ke level ${nextLevel})`,
         `Streak: ${player.streak}`,
         `Koin: ${player.coins ?? 0}`,
+        `Buff EXP: ${baseExp}×${expMultiplier.toFixed(1)} = ${buffedExp}/msg`,
       ]
 
       if (nextBracket) {

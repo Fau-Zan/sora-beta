@@ -1,6 +1,6 @@
 import { Config, Cmd, BaseCommand } from '../../base'
 import { Whatsapp } from 'violet'
-import { LevelingStore } from '../../database/postgres/leveling'
+import { getLevelingStore } from '../../database/postgres/leveling'
 
 @Config()
 export class command extends BaseCommand {
@@ -31,7 +31,7 @@ export class command extends BaseCommand {
     if (!gender) return this.replyText('Gender harus male atau female.')
 
     try {
-      const store = await LevelingStore.getInstance(POSTGRES_URL)
+      const store = await getLevelingStore()
       const player = await store.registerPlayer(this.M.sender as string, name, gender)
       return this.replyText(
         `Pendaftaran berhasil!\nNama: ${player.name}\nGender: ${player.gender}\nStatus: ${player.status_display}\nLevel Cap: ${player.bracket_max_level}`

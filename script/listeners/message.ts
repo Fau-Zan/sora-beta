@@ -16,7 +16,7 @@ import {
 import { BaseClient } from '../handlers'
 import type { Whatsapp } from 'violet'
 import { Logger } from '../utils'
-import { LevelingStore } from '../database/postgres/leveling'
+import { getLevelingStore } from '../database/postgres/leveling'
 
 const LAST_EXP_AT = new Map<string, number>()
 const EXP_PER_MESSAGE = 12
@@ -67,12 +67,11 @@ class Message {
         ? normalizeMessageContent(this.M.message)
         : this.M.message
 
+      const rawFrom = this.M.key.remoteJid as string
       const rawSender = this.M.key.fromMe
         ? BotWaNumber
-        : (this.M.key.participant ?? (this.M).participant ?? this.M.key.remoteJid)!
-      this.M.sender = jidNormalizedUser(rawSender)
-
-      const rawFrom = this.M.key.remoteJid as string
+        : isJidGroup(rawFrom) ? this.M.key.participant : this.M.key.remoteJid;
+      this.M.sender = rawSender
       this.M.from = isJidGroup(rawFrom) ? rawFrom : this.M.sender
       this.M.isGroup = this.isInGroup
 
@@ -252,8 +251,15 @@ class Message {
     if (last && now - last < EXP_COOLDOWN_MS) return
     LAST_EXP_AT.set(this.M.sender, now)
 
-    const store = await LevelingStore.getInstance(POSTGRES_URL)
-    await store.addExp(this.M.sender as string, EXP_PER_MESSAGE, 1, COIN_PER_MESSAGE)
+    const store = await getLevelingStore()
+    const player = await store.getPlayer(this.M.sender as string)
+    if (!player?.is_registered) return
+
+    const { getExpMultiplier } = await import('../utils/leveling')
+    const multiplier = getExpMultiplier(player.status_key)
+    const scaledExp = Math.floor(EXP_PER_MESSAGE * multiplier)
+
+    await store.addExp(this.M.sender as string, scaledExp, 1, COIN_PER_MESSAGE)
   }
 }
 

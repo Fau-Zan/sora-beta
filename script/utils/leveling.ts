@@ -90,3 +90,10 @@ export function nextStatusKey(statusKey: string): string | null {
 export function getBracket(statusKey: string): StatusBracket | undefined {
   return STATUS_BRACKETS.find((s) => s.statusKey === statusKey)
 }
+
+export function getExpMultiplier(statusKey: string): number {
+  const idx = STATUS_BRACKETS.findIndex((s) => s.statusKey === statusKey)
+  if (idx === -1) return 1.0
+  // Multiplier scales: Serf=1.0x, Freeman=1.2x, Merchant/Artisan=1.4x, ..., Emperor=2.8x
+  return 1.0 + (idx * 0.2)
+}

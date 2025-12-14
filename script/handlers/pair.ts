@@ -6,6 +6,9 @@ import _ from 'lodash';
 import { functions, Logger } from '../utils';
 import { LevelingStore } from '../database/postgres/leveling';
 
+// Cache imported modules to prevent re-import and state loss
+const MODULE_CACHE = new Map<string, any>();
+
 export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: Wa.IWaMess }) {
       client = client;
       this.M = M;
@@ -144,25 +147,38 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
       }
 
       for (let events of this.events) {
-            events = await import(events);
-            events = events[_.keys(events)[0]];
+            let eventModule;
+            if (MODULE_CACHE.has(events)) {
+                  eventModule = MODULE_CACHE.get(events);
+            } else {
+                  eventModule = await import(events);
+                  MODULE_CACHE.set(events, eventModule);
+            }
+            events = eventModule[_.keys(eventModule)[0]];
             events = new events(client, M);
-            if (events.all && !cmd.trim().startsWith(prefix))
-                  await events.all
-                        .bind(events)()
-                        .catch((p) => p);
+
+            // Run @All hook (or legacy all) for non-prefix messages
+            if (!cmd.trim().startsWith(prefix)) {
+                  if (events.allMethod) {
+                        await events.allMethod.bind(events)().catch((p) => p);
+                  } else if (events.all) {
+                        await events.all.bind(events)().catch((p) => p);
+                  }
+            }
+
             const property: [string | string[], Wa.CmdProperty][] = events.property;
             for (let handler of property) {
                   const [command, plugin] = handler;
 
-                  (events.cmd = cmd.replace(prefix, '').toLowerCase()),
-                        (events.query = query),
-                        (events.args = args),
-                        (events.modify = parsedText(full_query).result_parsed);
+                  events.cmd = cmd.replace(prefix, '').toLowerCase();
+                  events.query = query;
+                  events.args = args;
+                  events.modify = parsedText(full_query).result_parsed;
 
                   const cmdWithPref = plugin.usePrefix && cmd.trim().startsWith(prefix) ? true : undefined;
                   const cmdWithoutPref = !plugin.usePrefix ? true : undefined;
                   if (!cmdWithPref && !cmdWithoutPref) continue;
+
                   const isValid = Array.isArray(command)
                         ? micro.some(command, events.cmd)
                         : typeof command == 'string'
@@ -171,17 +187,20 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
                               : false
                         : undefined;
                   if (!isValid) continue;
+
                   if (plugin.acc?.admin && !M.admin) {
                         return client.sendMessage(M.from, 'this command can be used for admin', 'conversation', {
                               quoted: M,
                         });
                   }
+
                   if (plugin.acc?.textOrQuotedText && !query.full) continue;
+
                   return void (await plugin
                         .bind(events)(events)
                         .catch((_th) => {
-                              client.sendText(this.M.from, typeof _th == 'object' ? _th.message : _th, {
-                                    quoted: this.M,
+                              client.sendText(M.from, typeof _th == 'object' ? _th.message : _th, {
+                                    quoted: M,
                               });
                         }));
             }

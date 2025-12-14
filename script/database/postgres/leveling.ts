@@ -284,3 +284,15 @@ export class LevelingStore extends PostgresBase {
     })
   }
 }
+// Module-level singleton for leveling store
+let levelingStoreInstance: LevelingStore | null = null
+
+export async function getLevelingStore(): Promise<LevelingStore> {
+  const POSTGRES_URL = process.env.POSTGRES_URL
+  if (!POSTGRES_URL) {
+    throw new Error('POSTGRES_URL environment variable is not set')
+  }
+  if (levelingStoreInstance) return levelingStoreInstance
+  levelingStoreInstance = await LevelingStore.getInstance(POSTGRES_URL)
+  return levelingStoreInstance
+}
