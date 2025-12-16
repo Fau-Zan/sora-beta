@@ -243,7 +243,12 @@ export class command extends BaseCommand {
         loserJid = session.opponent
         const winnerData = await store.getPlayer(winnerJid)
         const loserData = await store.getPlayer(loserJid)
-        await store.adminAdjust(winnerJid, { coins: Number(winnerData!.coins) + session.bet })
+        
+        // Apply fable buffs untuk winner
+        const { applyFableBuffs } = await import('../../utils/leveling')
+        const { coins: buffedCoins } = await applyFableBuffs(winnerJid, 0, session.bet)
+        
+        await store.adminAdjust(winnerJid, { coins: Number(winnerData!.coins) + buffedCoins })
         await store.adminAdjust(loserJid, { coins: Math.max(0, Number(loserData!.coins) - session.bet) })
         await store.addExp(winnerJid, 50, 1, 0)
         await store.addExp(loserJid, 20, 1, 0)
@@ -253,7 +258,12 @@ export class command extends BaseCommand {
         loserJid = session.challenger
         const winnerData = await store.getPlayer(winnerJid)
         const loserData = await store.getPlayer(loserJid)
-        await store.adminAdjust(winnerJid, { coins: Number(winnerData!.coins) + session.bet })
+        
+        // Apply fable buffs untuk winner
+        const { applyFableBuffs } = await import('../../utils/leveling')
+        const { coins: buffedCoins } = await applyFableBuffs(winnerJid, 0, session.bet)
+        
+        await store.adminAdjust(winnerJid, { coins: Number(winnerData!.coins) + buffedCoins })
         await store.adminAdjust(loserJid, { coins: Math.max(0, Number(loserData!.coins) - session.bet) })
         await store.addExp(winnerJid, 50, 1, 0)
         await store.addExp(loserJid, 20, 1, 0)
@@ -262,6 +272,13 @@ export class command extends BaseCommand {
 
       await this.client.sendText(session.challenger, result === 'draw' ? 'Hasil: SERI!' : sender === winnerJid ? 'Kamu MENANG! 🎉' : 'Kamu KALAH 😢')
       await this.client.sendText(session.opponent, result === 'draw' ? 'Hasil: SERI!' : sender === winnerJid ? 'Kamu MENANG! 🎉' : 'Kamu KALAH 😢')
+
+      // Track suit wins for fable trigger
+      if (result !== 'draw') {
+        const winnerData = await store.getPlayer(winnerJid)
+        const newWins = Number(winnerData!.suit_wins || 0) + 1
+        await store.adminAdjust(winnerJid, { suit_wins: newWins })
+      }
 
       await this.client.sendMessage<'conversation'>(session.groupJid, message, 'conversation', {
         mentions: [session.challenger, session.opponent],

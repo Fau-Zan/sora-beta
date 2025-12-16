@@ -23,6 +23,8 @@ export type PlayerRow = {
   bracket_max_level: number
   streak: number
   coins: number
+  gems: number
+  suit_wins: number
   last_seen: Date | null
   registered_at: Date | null
   updated_at: Date | null
@@ -85,7 +87,12 @@ export class LevelingStore extends PostgresBase {
 
     await this.query(
       `ALTER TABLE players
-         ADD COLUMN IF NOT EXISTS coins BIGINT NOT NULL DEFAULT 0`
+         ADD COLUMN IF NOT EXISTS gems INT NOT NULL DEFAULT 0`
+    )
+
+    await this.query(
+      `ALTER TABLE players
+         ADD COLUMN IF NOT EXISTS suit_wins INT NOT NULL DEFAULT 0`
     )
 
     await this.ensureTable(
@@ -240,7 +247,7 @@ export class LevelingStore extends PostgresBase {
 
   async adminAdjust(
     jid: string,
-    opts: { level?: number; coins?: number; statusKey?: string; streak?: number; exp?: number }
+    opts: { level?: number; coins?: number; gems?: number; suit_wins?: number; statusKey?: string; streak?: number; exp?: number }
   ): Promise<PlayerRow | null> {
     await this.connect()
     await this.init()
@@ -261,6 +268,8 @@ export class LevelingStore extends PostgresBase {
 
       const nextExp = opts.exp !== undefined ? Math.max(0, opts.exp) : CUM_EXP[targetLevel]
       const nextCoins = opts.coins !== undefined ? Math.max(0, opts.coins) : player.coins
+      const nextGems = opts.gems !== undefined ? Math.max(0, opts.gems) : player.gems
+      const nextSuitWins = opts.suit_wins !== undefined ? Math.max(0, opts.suit_wins) : player.suit_wins
       const nextStreak = opts.streak !== undefined ? Math.max(0, opts.streak) : player.streak
       const display = statusTitle(targetStatusKey, player.gender)
 
@@ -269,14 +278,16 @@ export class LevelingStore extends PostgresBase {
          SET level = $1,
              exp = $2,
              coins = $3,
-             streak = $4,
-             status_key = $5,
-             status_display = $6,
-             bracket_max_level = $7,
+             gems = $4,
+             suit_wins = $5,
+             streak = $6,
+             status_key = $7,
+             status_display = $8,
+             bracket_max_level = $9,
              updated_at = now()
-         WHERE jid = $8
+         WHERE jid = $10
          RETURNING *`,
-        [targetLevel, nextExp, nextCoins, nextStreak, targetStatusKey, display, bracket.maxLevel, jid]
+        [targetLevel, nextExp, nextCoins, nextGems, nextSuitWins, nextStreak, targetStatusKey, display, bracket.maxLevel, jid]
       )
 
       await this.logEvent(client, jid, 'admin_adjust', 0, 0, opts)
@@ -284,7 +295,6 @@ export class LevelingStore extends PostgresBase {
     })
   }
 }
-// Module-level singleton for leveling store
 let levelingStoreInstance: LevelingStore | null = null
 
 export async function getLevelingStore(): Promise<LevelingStore> {

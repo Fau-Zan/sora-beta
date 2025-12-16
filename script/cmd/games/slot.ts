@@ -5,12 +5,6 @@ import { jidNormalizedUser } from '@whiskeysockets/baileys'
 
 type SlotSymbol = '🍎' | '🍊' | '🍋' | '🍌' | '💎' | '🔔'
 
-interface SlotResult {
-  symbols: SlotSymbol[]
-  win: boolean
-  multiplier: number
-}
-
 const SYMBOLS: SlotSymbol[] = ['🍎', '🍊', '🍋', '🍌', '💎', '🔔']
 const SLOT_COOLDOWN = new Map<string, number>()
 const COOLDOWN_MS = 2000
@@ -102,7 +96,6 @@ export class command extends BaseCommand {
       if (multiplier === 0) {
         const newCoins = Math.max(0, playerCoins - bet)
         await store.adminAdjust(sender, { coins: newCoins })
-        // EXP reward for playing: lose +15 EXP
         await store.addExp(sender, 15, 1, 0)
         message += `KALAH!\n`
         message += `Hilang ${bet} coins\n`
@@ -111,14 +104,25 @@ export class command extends BaseCommand {
         const totalWin = bet + winAmount
         const newCoins = playerCoins + winAmount
         await store.adminAdjust(sender, { coins: newCoins })
-        // EXP reward: scale by multiplier (3x=25, 10x=40, 50x=80)
         let expReward = 25
         if (multiplier >= 50) expReward = 80
         else if (multiplier >= 10) expReward = 40
         await store.addExp(sender, expReward, 1, 0)
 
         if (multiplier >= 50) {
-          message += `🤑 JACKPOT!!!!\n`
+          const gemChance = Math.random()
+          if (gemChance < 0.1) {
+            const { applyFableBuffs } = await import('../../utils/leveling')
+            const { gems: buffedGems } = await applyFableBuffs(sender, 0, 0, 1)
+            
+            await store.adminAdjust(sender, { gems: Number((await store.getPlayer(sender))!.gems) + buffedGems })
+            message += `🤑 JACKPOT!!!!
+💎 +${buffedGems} GEMS!
+`
+          } else {
+            message += `🤑 JACKPOT!!!!
+`
+          }
         } else if (multiplier >= 10) {
           message += `🎉 BIG WIN!\n`
         } else {

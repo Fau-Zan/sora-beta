@@ -178,8 +178,6 @@ class Message {
         }
       }
 
-      await this.handleLevelingExpTick().catch((err) => Logger.error('leveling exp tick failed', err))
-
       await this.client.sock.readMessages([this.M.key])
       if (this.emitNewMessage()) return void (await null)
     } catch (error) {
@@ -237,29 +235,6 @@ class Message {
 
   private async isAdmin(user: string) {
     return this.isInGroup ? (await this.getAdmin()).find((predicate) => predicate === user) !== undefined : false
-  }
-
-  private async handleLevelingExpTick() {
-    const POSTGRES_URL = process.env.POSTGRES_URL
-    if (!POSTGRES_URL) return
-    if (!this.M?.sender || this.M.isBotSending) return
-    if (!this.M.body || !this.M.type || !ALLOWED_MESSAGE_TYPES.has(this.M.type)) return
-    if (this.M.body.length < MIN_BODY_LENGTH) return
-
-    const now = Date.now()
-    const last = LAST_EXP_AT.get(this.M.sender)
-    if (last && now - last < EXP_COOLDOWN_MS) return
-    LAST_EXP_AT.set(this.M.sender, now)
-
-    const store = await getLevelingStore()
-    const player = await store.getPlayer(this.M.sender as string)
-    if (!player?.is_registered) return
-
-    const { getExpMultiplier } = await import('../utils/leveling')
-    const multiplier = getExpMultiplier(player.status_key)
-    const scaledExp = Math.floor(EXP_PER_MESSAGE * multiplier)
-
-    await store.addExp(this.M.sender as string, scaledExp, 1, COIN_PER_MESSAGE)
   }
 }
 

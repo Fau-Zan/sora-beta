@@ -15,9 +15,11 @@ export function Config() {
                   className.push(forceName);
             }
             let arr = [] as [string | string[], Whatsapp.CmdProperty][];
-            Array.from(property).forEach(([K, content]) => {
-                  return arr.push([K, content]);
-            });
+            if (property) {
+                  Array.from(property).forEach(([K, content]) => {
+                        return arr.push([K, content]);
+                  });
+            }
             Ctor.prototype.property = arr;
             Ctor.prototype.subClassName = className[1];
             return Ctor;

@@ -18,11 +18,6 @@ export class Command extends BaseCommand {
             super(client, M);
       }
 
-      /**
-       * JavaScript Eval Command
-       * Usage: > code here
-       * Flags: --r (return), --json (output as JSON), --inspect (deep inspect)
-       */
       @Cmd('(>)', {
             as: ['>'],
             division: 'owner',
@@ -101,12 +96,6 @@ export class Command extends BaseCommand {
                   return void (await this.replyText(response));
             }
       }
-
-      /**
-       * Shell Command Execution
-       * Usage: $ command here
-       * Flags: --dir /path (change directory), --json (parse as JSON)
-       */
       @Cmd('($)', {
             as: ['$'],
             division: 'owner',

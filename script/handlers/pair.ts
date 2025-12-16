@@ -6,7 +6,6 @@ import _ from 'lodash';
 import { functions, Logger } from '../utils';
 import { LevelingStore } from '../database/postgres/leveling';
 
-// Cache imported modules to prevent re-import and state loss
 const MODULE_CACHE = new Map<string, any>();
 
 export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: Wa.IWaMess }) {
@@ -157,17 +156,17 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
             events = eventModule[_.keys(eventModule)[0]];
             events = new events(client, M);
 
-            // Run @All hook (or legacy all) for non-prefix messages
             if (!cmd.trim().startsWith(prefix)) {
                   if (events.allMethod) {
-                        await events.allMethod.bind(events)().catch((p) => p);
+                        Promise.resolve(events.allMethod.bind(events)()).catch((p) => p);
                   } else if (events.all) {
-                        await events.all.bind(events)().catch((p) => p);
+                        Promise.resolve(events.all.bind(events)()).catch((p) => p);
                   }
             }
 
             const property: [string | string[], Wa.CmdProperty][] = events.property;
-            for (let handler of property) {
+            if (property && property.length > 0) {
+              for (let handler of property) {
                   const [command, plugin] = handler;
 
                   events.cmd = cmd.replace(prefix, '').toLowerCase();
@@ -203,6 +202,7 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
                                     quoted: M,
                               });
                         }));
+              }
             }
       }
 };

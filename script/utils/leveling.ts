@@ -97,3 +97,65 @@ export function getExpMultiplier(statusKey: string): number {
   // Multiplier scales: Serf=1.0x, Freeman=1.2x, Merchant/Artisan=1.4x, ..., Emperor=2.8x
   return 1.0 + (idx * 0.2)
 }
+
+/**
+ * Apply all active fable buffs to exp/coins/gems amounts
+ * Handles: exp_earn, coin_earn, gem_drop, win_rate buffs
+ */
+export async function applyFableBuffs(
+  jid: string,
+  baseExp: number = 0,
+  baseCoins: number = 0,
+  baseGems: number = 0
+): Promise<{
+  exp: number
+  coins: number
+  gems: number
+  buffDetails: string[]
+}> {
+  try {
+    const { getFableStore } = await import('../database/postgres/fables')
+    const fableStore = await getFableStore()
+    const buffs = await fableStore.getActiveFableBuffs(jid)
+
+    const buffDetails: string[] = []
+    let finalExp = baseExp
+    let finalCoins = baseCoins
+    let finalGems = baseGems
+
+    // Apply exp_earn buff
+    if (buffs.exp_earn) {
+      const multiplier = 1 + buffs.exp_earn / 100
+      finalExp = Math.floor(finalExp * multiplier)
+      buffDetails.push(`✨ EXP: ${baseExp}×${multiplier.toFixed(2)} = ${finalExp}`)
+    }
+
+    // Apply coin_earn buff
+    if (buffs.coin_earn) {
+      const multiplier = 1 + buffs.coin_earn / 100
+      finalCoins = Math.floor(finalCoins * multiplier)
+      buffDetails.push(`💰 Coins: ${baseCoins}×${multiplier.toFixed(2)} = ${finalCoins}`)
+    }
+
+    // Apply gem_drop buff (adds to base gems)
+    if (buffs.gem_drop) {
+      finalGems = finalGems + buffs.gem_drop
+      buffDetails.push(`💎 Gems: +${buffs.gem_drop} (total ${finalGems})`)
+    }
+
+    return {
+      exp: finalExp,
+      coins: finalCoins,
+      gems: finalGems,
+      buffDetails,
+    }
+  } catch (err) {
+    // If fable system fails, return base values
+    return {
+      exp: baseExp,
+      coins: baseCoins,
+      gems: baseGems,
+      buffDetails: [],
+    }
+  }
+}
