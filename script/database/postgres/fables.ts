@@ -1,4 +1,3 @@
-import { PoolClient } from 'pg'
 import { PostgresBase } from './postgres'
 
 export type Fable = {
@@ -197,14 +196,11 @@ export class FableStore extends PostgresBase {
     if (fableRes.rowCount === 0) return null
 
     const fable = fableRes.rows[0] as Fable
-
-    // Update player_fables to claimed
     await this.query(
       `UPDATE player_fables SET claimed_at = now(), active = true WHERE jid = $1 AND fable_id = $2`,
       [jid, fableId]
     )
 
-    // Award coins/gems (handled in command, just return fable)
     return fable
   }
 
@@ -238,7 +234,6 @@ export class FableStore extends PostgresBase {
   }
 }
 
-// Module-level singleton
 let fableStoreInstance: FableStore | null = null
 
 export async function getFableStore(): Promise<FableStore> {

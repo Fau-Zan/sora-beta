@@ -1,8 +1,10 @@
 import { Config, Cmd, BaseCommand } from '../../base'
 import { Whatsapp } from 'violet'
 import { getLevelingStore } from '../../database/postgres/leveling'
+import { getEquipmentStore } from '../../database/postgres/equipment'
 import { computeLevel, CUM_EXP, REQUIRED_EXP, nextStatusKey, statusTitle, getBracket, getExpMultiplier } from '../../utils/leveling'
 import { getFableStore } from '../../database/postgres/fables'
+import { getAvailableClasses, getClassRequiredLevel, getElementDescription } from '../../utils/formula'
 
 @Config()
 export class command extends BaseCommand {
@@ -23,11 +25,16 @@ export class command extends BaseCommand {
 
     try {
       const store = await getLevelingStore()
+      const equipmentStore = await getEquipmentStore()
       const jid = this.M.sender as string
       const player = await store.getPlayer(jid)
       if (!player || !player.is_registered) {
         return this.replyText('Kamu belum terdaftar. Gunakan perintah register <nama> <male|female>.')
       }
+      const classInfo = await equipmentStore.getClassInfo(jid)
+      const currentClass = classInfo?.current_class || 'None'
+      const equippedItems = await equipmentStore.getEquippedItems(jid)
+      const availableClasses = getAvailableClasses(player.level)
 
       const theoreticalLevel = computeLevel(Number(player.exp))
       const nextKey = nextStatusKey(player.status_key)
@@ -50,7 +57,20 @@ export class command extends BaseCommand {
         `Streak: ${player.streak}`,
         `Koin: ${player.coins ?? 0}`,
         `Gems: ${player.gems ?? 0}`,
+        ``,
+        `⚔️ COMBAT INFO:`,
+        `Class: ${currentClass}`,
+        `Element: ${classInfo?.selected_element || 'None'} (${getElementDescription(classInfo?.selected_element as any)})`,
+        `Available Classes: ${availableClasses.join(', ')}`,
       ]
+
+      // Equipment info
+      if (equippedItems.weapon || equippedItems.armor || equippedItems.accessory) {
+        lines.push(`\nEquipped:`)
+        if (equippedItems.weapon) lines.push(`  🔪 Weapon: ${equippedItems.weapon.name} [${equippedItems.weapon.rarity}]`)
+        if (equippedItems.armor) lines.push(`  🛡️ Armor: ${equippedItems.armor.name} [${equippedItems.armor.rarity}]`)
+        if (equippedItems.accessory) lines.push(`  💍 Accessory: ${equippedItems.accessory.name} [${equippedItems.accessory.rarity}]`)
+      }
 
       lines.push(``)
       lines.push(`BUFF SUMMARY:`)

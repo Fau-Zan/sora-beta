@@ -244,7 +244,6 @@ export class command extends BaseCommand {
         const winnerData = await store.getPlayer(winnerJid)
         const loserData = await store.getPlayer(loserJid)
         
-        // Apply fable buffs untuk winner
         const { applyFableBuffs } = await import('../../utils/leveling')
         const { coins: buffedCoins } = await applyFableBuffs(winnerJid, 0, session.bet)
         
@@ -259,7 +258,6 @@ export class command extends BaseCommand {
         const winnerData = await store.getPlayer(winnerJid)
         const loserData = await store.getPlayer(loserJid)
         
-        // Apply fable buffs untuk winner
         const { applyFableBuffs } = await import('../../utils/leveling')
         const { coins: buffedCoins } = await applyFableBuffs(winnerJid, 0, session.bet)
         
@@ -273,7 +271,6 @@ export class command extends BaseCommand {
       await this.client.sendText(session.challenger, result === 'draw' ? 'Hasil: SERI!' : sender === winnerJid ? 'Kamu MENANG! 🎉' : 'Kamu KALAH 😢')
       await this.client.sendText(session.opponent, result === 'draw' ? 'Hasil: SERI!' : sender === winnerJid ? 'Kamu MENANG! 🎉' : 'Kamu KALAH 😢')
 
-      // Track suit wins for fable trigger
       if (result !== 'draw') {
         const winnerData = await store.getPlayer(winnerJid)
         const newWins = Number(winnerData!.suit_wins || 0) + 1
