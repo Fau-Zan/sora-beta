@@ -3,7 +3,7 @@ import type { WAMessage, WAMessageKey } from '@whiskeysockets/baileys';
 
 declare module 'violet' {
       namespace Whatsapp {
-            // Make IMessage compatible with both IWebMessageInfo and WAMessage
+
             type IMessage = (proto.IWebMessageInfo | WAMessage) & Partial<Message>;
             export type IClient = import('../listeners').Message['client'];
             export type IWaMess = import('../listeners').Message['M'];

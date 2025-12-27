@@ -1,24 +1,17 @@
 #!/bin/bash
 
-# ============================================
-# PostgreSQL Monitoring & Management Script
-# Database: violetdb (violet)
-# ============================================
 
-# Configuration
 DB_NAME="violetdb"
 DB_USER="postgres"
 DB_HOST="violetdb.cxm64ioi4d1f.ap-southeast-2.rds.amazonaws.com"
 DB_PORT="5432"
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Functions
 print_header() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${GREEN}$1${NC}"
@@ -33,12 +26,10 @@ print_error() {
     echo -e "${RED}✗ $1${NC}"
 }
 
-# Execute SQL query
 execute_query() {
     PGPASSWORD=$DB_PASS psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "$1"
 }
 
-# Menu utama
 show_main_menu() {
     clear
     print_header "PostgreSQL Monitoring Tool - violetdb"
@@ -58,7 +49,6 @@ show_main_menu() {
     read -p "Pilih menu (1-10): " menu_choice
 }
 
-# 1. Database Information
 menu_database_info() {
     clear
     print_header "1. DATABASE INFORMATION"
@@ -83,7 +73,6 @@ WHERE datname = 'violet';"
     pause_menu
 }
 
-# 2. Tables & Columns
 menu_tables() {
     clear
     print_header "2. TABLES & COLUMNS"
@@ -119,7 +108,6 @@ ORDER BY table_name, indexname;"
     pause_menu
 }
 
-# 3. Users & Permissions
 menu_users() {
     clear
     print_header "3. USERS & PERMISSIONS"
@@ -145,7 +133,6 @@ ORDER BY r.rolname;"
     pause_menu
 }
 
-# 4. Performance Monitoring
 menu_performance() {
     clear
     print_header "4. PERFORMANCE MONITORING"
@@ -219,7 +206,6 @@ ORDER BY dead_ratio DESC;"
     pause_menu
 }
 
-# 5. Maintenance
 menu_maintenance() {
     clear
     print_header "5. MAINTENANCE"
@@ -269,7 +255,6 @@ ORDER BY tablename;"
     pause_menu
 }
 
-# 6. CRUD Operations
 menu_crud() {
     clear
     print_header "6. CRUD OPERATIONS"

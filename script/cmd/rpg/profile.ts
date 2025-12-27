@@ -64,7 +64,6 @@ export class command extends BaseCommand {
         `Available Classes: ${availableClasses.join(', ')}`,
       ]
 
-      // Equipment info
       if (equippedItems.weapon || equippedItems.armor || equippedItems.accessory) {
         lines.push(`\nEquipped:`)
         if (equippedItems.weapon) lines.push(`  🔪 Weapon: ${equippedItems.weapon.name} [${equippedItems.weapon.rarity}]`)
@@ -74,24 +73,24 @@ export class command extends BaseCommand {
 
       lines.push(``)
       lines.push(`BUFF SUMMARY:`)
-    
+
       lines.push(`Status Buff (${player.status_display}):`)
       lines.push(`EXP Multiplier: ${expMultiplier.toFixed(2)}x (base ${baseExp} → ${buffedExp}/msg)`)
-      
+
       let finalExpPerMsg = buffedExp
       let fableExpBuff = 0
-      
+
       try {
         const fableStore = await getFableStore()
         const buffs = await fableStore.getActiveFableBuffs(jid)
-        
+
         if (Object.keys(buffs).length > 0) {
           lines.push(`Fable Buffs:`)
           if (buffs.exp_earn) {
             fableExpBuff = buffs.exp_earn
             finalExpPerMsg = Math.floor(finalExpPerMsg * (1 + buffs.exp_earn / 100))
           }
-          
+
           for (const [buffType, buffValue] of Object.entries(buffs)) {
             let icon = ''
             let label = ''

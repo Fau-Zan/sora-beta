@@ -32,7 +32,7 @@ const question = (text: string) => new Promise<string>((resolve) => rl.question(
 export const activeSessions = new Set<string>()
 
 export async function autoStart(
-  configName: string = 'zan', 
+  configName: string = 'zan',
   usePair: boolean = false,
   customQRHandler?: (qr: string) => Promise<void> | void
 ) {
@@ -75,7 +75,7 @@ export async function autoStart(
 
   client.sock.ev.on('connection.update', async (arg: Partial<ConnectionState>) => {
     const { connection, lastDisconnect, qr } = arg
-    
+
     if (qr && !usePair) {
       if (customQRHandler) {
         await customQRHandler(qr)
@@ -84,10 +84,10 @@ export async function autoStart(
         Logger.info('📱 Scan QR code above to login')
       }
     }
-    
+
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect?.error as any)?.output?.statusCode !== 401
-      
+
       if (!shouldReconnect) {
         try {
           Logger.warn('Session unauthorized (401). Deleting auth from PostgreSQL and restarting...')
@@ -96,7 +96,7 @@ export async function autoStart(
           const authPath = path.join(process.cwd(), 'auth', configName)
           await fs.rm(authPath, { recursive: true, force: true })
           Logger.info('✅ Session deleted from PostgreSQL and filesystem. Restarting in 3s...')
-          
+
           await new Promise(resolve => setTimeout(resolve, 3000))
           autoStart(configName, usePair)
         } catch (err) {
@@ -116,7 +116,7 @@ export async function autoStart(
       }
     } else if (connection === 'open') {
       Logger.info('✅ Connection established')
-      // Remove from active sessions when connected
+
       activeSessions.delete(configName)
       client.store.bind(client.sock.ev)
       client.store.load()

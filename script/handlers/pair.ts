@@ -12,12 +12,12 @@ export const Pair = async function Pair({ client, M }: { client: Wa.IClient; M: 
       client = client;
       this.M = M;
       const msgType = M.type || 'unknown';
-      
+
       if (msgType !== 'protocolMessage') {
         const msgContent = M.body || '[no text content]';
         Logger.info(`📨 Message - Type: ${msgType} | From: ${M.from} | Content: ${msgContent.substring(0, 100)}${msgContent.length > 100 ? '...' : ''}`);
       }
-      
+
       let prefix = '?';
       let [cmd, ...args] = String(M.body).split(/ +/),
             full_query = args.join(' ');

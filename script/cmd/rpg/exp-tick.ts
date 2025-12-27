@@ -16,7 +16,6 @@ export class command extends BaseCommand {
     super(client, M)
   }
 
-
   @All()
   async ExpTick() {
     const M = this.M

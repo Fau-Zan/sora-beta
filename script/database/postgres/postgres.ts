@@ -14,7 +14,7 @@ export class PostgresBase {
   private opts: Required<Pick<PostgresBaseOpts, 'serializeWrites' | 'retries' | 'backoffMs'>>
 
   constructor(private cfg: PostgresBaseOpts) {
-    this.pool = new Pool({ 
+    this.pool = new Pool({
       connectionString: cfg.connectionString,
       ssl: {
         rejectUnauthorized: false
@@ -123,12 +123,11 @@ export class PostgresBase {
   async bulkUpsert<T extends Record<string, any>>(tableName: string, docs: T[], identifierKey: keyof T): Promise<any> {
     if (!docs.length) return { rowCount: 0 }
 
-    // Use batch insert instead of transaction loop for better performance
     const columns = Object.keys(docs[0])
     const quotedColumns = columns.map(col => this.quoteColumn(col))
     const quotedIdKey = this.quoteColumn(identifierKey as string)
-    
-    // Build values placeholder for all docs
+
+
     let valueIndex = 1
     const valuesArray: any[] = []
     const valuePlaceholders = docs.map(doc => {
@@ -138,7 +137,6 @@ export class PostgresBase {
       return `(${placeholders})`
     }).join(', ')
 
-    // Build UPDATE SET clause
     const updateSet = columns
       .filter(col => col !== identifierKey)
       .map(col => `${this.quoteColumn(col)} = EXCLUDED.${this.quoteColumn(col)}`)

@@ -73,16 +73,16 @@ export class command extends BaseCommand {
 
       const equipmentStore = await getEquipmentStore()
       let classInfo = await equipmentStore.getClassInfo(jid)
-      
+
       if (!classInfo) {
         await equipmentStore.setClass(jid, 'None')
         classInfo = await equipmentStore.getClassInfo(jid)
       }
 
       const classStats = classInfo?.current_class && classInfo.current_class !== 'None' ? CLASS_STATS[classInfo.current_class as any] : {}
-      
+
       console.log(`[HUNT START DEBUG] classInfo:`, classInfo, 'classStats:', classStats)
-      
+
       const characterStats: CombatStats = {
         level: player.level,
         baseAtk: classStats.baseAtk || 20,
@@ -95,7 +95,7 @@ export class command extends BaseCommand {
         defense: classStats.defense || 10,
         hp: classStats.hp || 100,
       }
-      
+
       console.log(`[HUNT START DEBUG] characterStats.hp:`, characterStats.hp)
 
       const session = createHuntSession(jid, characterStats, selectedMonster)
@@ -159,11 +159,16 @@ Commands:
 
       console.log(`[HUNT DEBUG] jid: ${jid}, classInfo:`, classInfo, 'classStats:', classStats)
 
+      const { getFableStore } = await import('../../database/postgres/fables')
+      const fableStore = await getFableStore()
+      const fableBuffs = await fableStore.getActiveFableBuffs(jid)
+      const atkMultiplier = 1 + (fableBuffs.win_rate || 0) / 100
+
       const characterStats: CombatStats = {
         level: player.level,
-        baseAtk: classStats.baseAtk || 20,
+        baseAtk: (classStats.baseAtk || 20) * atkMultiplier,
         atkPercent: classStats.atkPercent || 10,
-        flatAtkBonus: classStats.flatAtkBonus || 5,
+        flatAtkBonus: (classStats.flatAtkBonus || 5) * atkMultiplier,
         critDamage: classStats.critDamage || 50,
         element: (classInfo?.selected_element as Element) || 'Pyro',
         elementalDamageBonus: 10,
@@ -185,12 +190,12 @@ Commands:
         if (log.actor === 'character') {
           const dmgText = log.isCrit ? `💥 CRITICAL!` : '⚔️ Hit'
           result += `${dmgText}\n`
-          
+
           if (log.damage) {
             const dmg = log.damage
             result += `┌─ Breakdown\n`
             result += `├─ Base DMG: ${dmg.baseDamage}\n`
-            
+
             if (dmg.breakdown && dmg.breakdown.length > 0) {
               for (const line of dmg.breakdown) {
                 if (line.includes('Element:') && !line.includes('isElemental')) {
@@ -207,10 +212,10 @@ Commands:
                 }
               }
             }
-            
+
             result += `└─ Final DMG: ${dmg.finalDamage}\n`
           }
-          
+
           result += `→ Monster HP: ${log.hpAfter}\n`
         } else {
           const dmgText = log.isCrit ? `💥 CRITICAL!` : '🎪 Attack'
@@ -218,17 +223,32 @@ Commands:
         }
       }
 
-      // Check win/lose
       if ((session.status as any) === 'won') {
         result += `\n✅ VICTORY! Monster defeated!\n`
-        result += `EXP: +${session.rewards?.exp}\n`
-        result += `Coins: +${session.rewards?.coins}\n`
-        result += `Gems: +${session.rewards?.gems}`
 
-        // Award player
+
+        const { applyFableBuffs } = await import('../../utils/leveling')
+        const buffedRewards = await applyFableBuffs(
+          jid,
+          session.rewards?.exp || 0,
+          session.rewards?.coins || 0,
+          session.rewards?.gems || 0
+        )
+
+        result += `EXP: +${buffedRewards.exp}\n`
+        result += `Coins: +${buffedRewards.coins}\n`
+        result += `Gems: +${buffedRewards.gems}\n`
+
+        if (buffedRewards.buffDetails.length > 0) {
+          result += `\n✨ Fable Buffs:\n`
+          for (const detail of buffedRewards.buffDetails) {
+            result += `  ${detail}\n`
+          }
+        }
+
         if (session.rewards) {
-          await store.addExp(jid, session.rewards.exp, 0, session.rewards.coins)
-          await store.adminAdjust(jid, { gems: Math.max(0, player.gems + session.rewards.gems) })
+          await store.addExp(jid, buffedRewards.exp, 0, buffedRewards.coins)
+          await store.adminAdjust(jid, { gems: Math.max(0, player.gems + buffedRewards.gems) })
         }
 
         activeSessions.delete(jid)
@@ -316,6 +336,119 @@ Turn: ${session.turn}
 `.trim()
 
       return this.replyText(statusMsg)
+    } catch (err: any) {
+      return this.replyText(`❌ Error: ${err?.message || err}`)
+    }
+  }
+
+  @Cmd('(autoattack)', {
+    as: ['autoattack'],
+    description: 'Instant attack sampai salah satu mati',
+    usePrefix: true,
+    division: 'hunting',
+    acc: { owner: false },
+  })
+  async autoAttack() {
+    const jid = this.M.sender as string
+
+    try {
+      const session = activeSessions.get(jid)
+      if (!session) {
+        return this.replyText('❌ Kamu tidak sedang hunting. Gunakan /hunt untuk memulai.')
+      }
+
+      if (session.status !== 'ongoing') {
+        return this.replyText(`❌ Hunt sudah selesai! Status: ${session.status.toUpperCase()}`)
+      }
+
+      const store = await getLevelingStore()
+      const player = await store.getPlayer(jid)
+      if (!player) return this.replyText('❌ Player tidak ditemukan.')
+
+      const equipmentStore = await getEquipmentStore()
+      const classInfo = await equipmentStore.getClassInfo(jid)
+      const classStats = classInfo?.current_class && classInfo.current_class !== 'None' ? CLASS_STATS[classInfo.current_class as any] : {}
+
+      const { getFableStore } = await import('../../database/postgres/fables')
+      const fableStore = await getFableStore()
+      const fableBuffs = await fableStore.getActiveFableBuffs(jid)
+      const atkMultiplier = 1 + (fableBuffs.win_rate || 0) / 100
+
+      const characterStats: CombatStats = {
+        level: player.level,
+        baseAtk: (classStats.baseAtk || 20) * atkMultiplier,
+        atkPercent: classStats.atkPercent || 10,
+        flatAtkBonus: (classStats.flatAtkBonus || 5) * atkMultiplier,
+        critDamage: classStats.critDamage || 50,
+        element: (classInfo?.selected_element as Element) || 'Pyro',
+        elementalDamageBonus: 10,
+        physicalDamageBonus: 10,
+        defense: classStats.defense || 10,
+        hp: classStats.hp || 100,
+      }
+
+      const elementAdvantage = getElementAdvantageMultiplier(
+        characterStats.element,
+        session.monster.element
+      )
+
+      let result = `⚡ AUTO BATTLE ⚡\n\n`
+      let turnCount = 0
+      const maxTurns = 100 // Safety limit
+
+      while (session.status === 'ongoing' && turnCount < maxTurns) {
+        const turnLogs = await executeTurn(session, characterStats, elementAdvantage)
+        turnCount++
+
+        for (const log of turnLogs) {
+          if (log.actor === 'character') {
+            const dmgText = log.isCrit ? `💥` : '⚔️'
+            result += `${dmgText} Damage: ${log.damage?.finalDamage}\n`
+          } else {
+            const dmgText = log.isCrit ? `💥` : '🎪'
+            result += `${dmgText} Monster DMG: ${log.damage?.finalDamage}\n`
+          }
+        }
+      }
+
+      result += `\n🎯 Total Turns: ${session.turn}\n`
+
+      if ((session.status as any) === 'won') {
+        result += `\n✅ VICTORY!\n`
+
+
+        const { applyFableBuffs } = await import('../../utils/leveling')
+        const buffedRewards = await applyFableBuffs(
+          jid,
+          session.rewards?.exp || 0,
+          session.rewards?.coins || 0,
+          session.rewards?.gems || 0
+        )
+
+        result += `EXP: +${buffedRewards.exp}\n`
+        result += `Coins: +${buffedRewards.coins}\n`
+        result += `Gems: +${buffedRewards.gems}\n`
+
+
+        if (buffedRewards.buffDetails.length > 0) {
+          result += `\n✨ Fable Buffs:\n`
+          for (const detail of buffedRewards.buffDetails) {
+            result += `  ${detail}\n`
+          }
+        }
+
+        if (session.rewards) {
+          await store.addExp(jid, buffedRewards.exp, 0, buffedRewards.coins)
+          await store.adminAdjust(jid, { gems: Math.max(0, player.gems + buffedRewards.gems) })
+        }
+
+        activeSessions.delete(jid)
+      } else if ((session.status as any) === 'lost') {
+        result += `\n❌ DEFEATED!`
+        activeSessions.delete(jid)
+      }
+
+      return this.replyText(result)
     } catch (err: any) {
       return this.replyText(`❌ Error: ${err?.message || err}`)
     }

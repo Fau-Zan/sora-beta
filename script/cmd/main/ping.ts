@@ -37,13 +37,13 @@ ${response}
             const hours = Math.floor((seconds % 86400) / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
             const secs = Math.floor(seconds % 60);
-            
+
             const parts = [];
             if (days > 0) parts.push(`${days}d`);
             if (hours > 0) parts.push(`${hours}h`);
             if (minutes > 0) parts.push(`${minutes}m`);
             if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-            
+
             return parts.join(' ');
       }
 
@@ -52,7 +52,7 @@ ${response}
             const heapUsedMB = (memUsage.heapUsed / 1024 / 1024).toFixed(1);
             const heapTotalMB = (memUsage.heapTotal / 1024 / 1024).toFixed(1);
             const percent = ((memUsage.heapUsed / memUsage.heapTotal) * 100).toFixed(1);
-            
+
             return {
                   used: heapUsedMB,
                   total: heapTotalMB,

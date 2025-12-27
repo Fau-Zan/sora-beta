@@ -70,7 +70,7 @@ export class Command extends BaseCommand {
     try {
       const db = await new PostgresBase({ connectionString: POSTGRES_URL }).connect()
       const sessions = await db.query('SELECT session_id, created_at, updated_at FROM wa_auth ORDER BY updated_at DESC')
-      
+
       if (!sessions.rows || sessions.rows.length === 0) {
         return await this.replyText('Tidak ada session tersimpan di database.')
       }
@@ -99,7 +99,7 @@ export class Command extends BaseCommand {
   })
   async deleteSession() {
     const sessionName = this.args?.[0]
-    
+
     if (!sessionName) {
       return await this.replyText('Berikan nama session yang akan dihapus!\n\nContoh: .delsession zan')
     }
@@ -132,7 +132,7 @@ export class Command extends BaseCommand {
 
       await this.replyText(`Session "${sessionName}" berhasil dihapus dari database beserta semua data terkait.`)
       await db.close()
-      
+
       Logger.info(`Session ${sessionName} deleted by user`)
     } catch (err) {
       Logger.error(`Failed to delete session: ${err instanceof Error ? err.message : String(err)}`)

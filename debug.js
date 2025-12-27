@@ -71,52 +71,7 @@ export function Cmd(cmd, structure) {
 }
 
 export class BaseCommand {
-  /*constructor(client, M) {
-    (this.client = client), (this.M = M);
-  }
-  MessageMethod = MessType;
-  client;
-  M;
-  setting;
-  modify;
-  query;
-  cmd;
-  args;
-  async after() {}
-  async sendWait() {
-    return await console.log('Please wait, your request is being processed');
-  }
-  replyText = (content) => {
-    return this.client.sendText(this.M.from, content, {
-      quoted: this.M,
-    });
-  };
-  isImage() {
-    let M;
-    if (this.M.quoted) M = this.M.quoted.content;
-    else M = this.M;
-    return M.type === 'imageMessage';
-  }
-  isVideo() {
-    let M;
-    if (this.M.quoted) M = this.M.quoted.content;
-    else M = this.M;
-    return M.type === 'videoMessage';
-  }
-  isSticker() {
-    let M;
-    if (this.M.quoted) M = this.M.quoted.content;
-    else M = this.M;
-    return M.type === 'stickerMessage';
-  }
-  isAudio() {
-    let M;
-    if (this.M.quoted) M = this.M.quoted.content;
-    else M = this.M;
-    return M.type === 'audioMessage';
-  }
-  functions = functions;
-  */
+
 }
 
 import { format } from 'util';

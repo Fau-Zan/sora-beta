@@ -12,7 +12,7 @@ import pino from 'pino';
 config();
 class Functions {
       private async importFresh(modulePath: string): Promise<any> {
-            // Convert to file URL and append cache-busting query param
+
             const fileUrl = pathToFileURL(modulePath).href + `?t=${Date.now()}`;
             return import(fileUrl);
       }
@@ -144,21 +144,11 @@ class Functions {
             return out;
       }
 
-      /**
-       * Functions name
-       * @param { Function } Fn
-       * @returns string
-       */
 
       public FunctionName(Fn: Function): string {
             return (Fn as any)[Symbol.name] || Fn.name;
       }
 
-      /**
-       * Deeps read dir
-       * @param { string } dir
-       * @returns string[]
-       */
       public walk(dir: string) {
             var results: string[] = [];
             const list = fs.readdirSync(dir);
@@ -196,7 +186,7 @@ class Functions {
                   }
                   if (char === '/') {
                         if (lastSlash === i - 1 || dots === 1) {
-                              // NOOP
+
                         } else if (dots === 2) {
                               if (
                                     res.length < 2 ||

@@ -127,10 +127,10 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     const excludeFields = ['messages'] // Fields to never store even in data JSONB
     const doc: any = { id: c.id }
     const extraData: any = {}
-    
+
     for (const [key, value] of Object.entries(c)) {
       if (excludeFields.includes(key)) {
-        // Skip excluded fields entirely
+
         continue
       } else if (schemaFields.includes(key)) {
         doc[key] = value
@@ -138,7 +138,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
         extraData[key] = value
       }
     }
-    
+
     if (Object.keys(extraData).length > 0) {
       doc.data = extraData
     }
@@ -149,7 +149,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     const schemaFields = ['id', 'name', 'notify', 'isContact', 'isMyContact', 'isBusiness', 'isEnterprise', 'verifiedName', 'verifiedLevel', 'businessAccountLinkUrl', 'statusMute', 'pictureUrl']
     const doc: any = { id: c.id }
     const extraData: any = {}
-    
+
     for (const [key, value] of Object.entries(c)) {
       if (schemaFields.includes(key)) {
         doc[key] = value
@@ -157,7 +157,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
         extraData[key] = value
       }
     }
-    
+
     if (Object.keys(extraData).length > 0) {
       doc.data = extraData
     }
@@ -168,11 +168,11 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
     const schemaFields = ['keyId', 'remoteJid', 'type', 'messageTimestamp', 'message', 'deleted']
     const doc: any = {}
     const extraData: any = {}
-  
+
     if (keyId) {
       doc.keyId = keyId
     }
-    
+
     for (const [key, value] of Object.entries(m)) {
       if (schemaFields.includes(key)) {
         doc[key] = value
@@ -180,7 +180,7 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
         extraData[key] = value
       }
     }
-    
+
     if (Object.keys(extraData).length > 0) {
       doc.data = extraData
     }
@@ -221,12 +221,12 @@ export async function createPostgresStore(opts: PostgresStoreOptions) {
       const docs = Array.from(batch.values())
       const tableName = kind === 'msg' ? `${ns}_messages` : `${ns}_${kind === 'chat' ? 'chats' : 'contacts'}`
       const idKey = kind === 'msg' ? 'keyId' : 'id'
-      
+
       if (docs.length > 0 && kind === 'chat') {
         const keys = Object.keys(docs[0])
         Logger.debug?.(`flush(${kind}): doc keys = [${keys.join(', ')}]`)
       }
-      
+
       await db.bulkUpsert(tableName, docs, idKey as any)
       batch.clear()
     } catch (err) {

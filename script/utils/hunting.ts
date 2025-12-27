@@ -1,21 +1,9 @@
-/**
- * Hunting System - Turnbase Combat
- * Implements turnbase hunting/battle with monsters
- * Uses damage formula from formula.ts
- */
 
 import { CombatStats, EnemyStats, Element, calculateDamage, DamageResult } from './formula'
-
-// ============================================================================
-// HUNTING TYPES
-// ============================================================================
 
 export type MonsterRarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
 export type BattleStatus = 'ongoing' | 'won' | 'lost' | 'fled'
 
-/**
- * Monster definition
- */
 export interface Monster {
   id: string
   name: string
@@ -29,9 +17,6 @@ export interface Monster {
   dropRate: number // Item drop chance %
 }
 
-/**
- * Hunt session tracking
- */
 export interface HuntSession {
   sessionId: string
   jid: string // Character JID
@@ -44,9 +29,6 @@ export interface HuntSession {
   rewards: HuntRewards | null
 }
 
-/**
- * Single turn action
- */
 export interface TurnLog {
   turn: number
   actor: 'character' | 'monster'
@@ -57,9 +39,6 @@ export interface TurnLog {
   isCrit: boolean
 }
 
-/**
- * Hunt rewards
- */
 export interface HuntRewards {
   exp: number
   coins: number
@@ -67,10 +46,6 @@ export interface HuntRewards {
   itemDropped: boolean
   duration: number // Turn count
 }
-
-// ============================================================================
-// MONSTER DATABASE
-// ============================================================================
 
 export const MONSTER_POOL: Record<number, Monster[]> = {
   1: [
@@ -483,13 +458,6 @@ export const MONSTER_POOL: Record<number, Monster[]> = {
   ],
 }
 
-// ============================================================================
-// HUNTING FUNCTIONS
-// ============================================================================
-
-/**
- * Get available monsters for a character level
- */
 export function getAvailableMonsters(characterLevel: number): Monster[] {
   const monsters: Monster[] = []
   for (const [levelRange, monsterList] of Object.entries(MONSTER_POOL)) {
@@ -501,9 +469,6 @@ export function getAvailableMonsters(characterLevel: number): Monster[] {
   return monsters
 }
 
-/**
- * Create a new hunt session
- */
 export function createHuntSession(
   jid: string,
   characterStats: CombatStats,
@@ -522,16 +487,13 @@ export function createHuntSession(
   }
 }
 
-/**
- * Execute character attack
- */
 export async function executeCharacterAttack(
   session: HuntSession,
   characterStats: CombatStats,
   talentMultiplier: number = 100,
   elementAdvantage: number = 1
 ): Promise<TurnLog> {
-  // Roll for crit (20% crit chance)
+
   const critRoll = Math.random() < 0.2 ? 1 : 0
   const isCrit = critRoll === 1
 
@@ -559,7 +521,6 @@ export async function executeCharacterAttack(
 
   session.turnLog.push(log)
 
-  // Check if monster is defeated
   if (session.monsterHp <= 0) {
     session.status = 'won'
     session.rewards = {
@@ -574,14 +535,11 @@ export async function executeCharacterAttack(
   return log
 }
 
-/**
- * Execute monster attack
- */
 export async function executeMonsterAttack(
   session: HuntSession,
   characterStats: CombatStats
 ): Promise<TurnLog> {
-  // Monster has simpler stats for now
+
   const monsterAsAttacker: CombatStats = {
     level: session.monster.level,
     baseAtk: 10 + session.monster.level,
@@ -633,7 +591,6 @@ export async function executeMonsterAttack(
 
   session.turnLog.push(log)
 
-  // Check if character is defeated
   if (session.characterHp <= 0) {
     session.status = 'lost'
     session.rewards = {
@@ -648,9 +605,6 @@ export async function executeMonsterAttack(
   return log
 }
 
-/**
- * Execute one full turn (character attacks, then monster counterattacks if alive)
- */
 export async function executeTurn(
   session: HuntSession,
   characterStats: CombatStats,
@@ -658,14 +612,11 @@ export async function executeTurn(
 ): Promise<TurnLog[]> {
   const logs: TurnLog[] = []
 
-  // Increment turn counter
   session.turn++
 
-  // Character attacks
   const charAttackLog = await executeCharacterAttack(session, characterStats, 100, elementAdvantage)
   logs.push(charAttackLog)
 
-  // If monster still alive, monster attacks
   if (session.status === 'ongoing' && session.monsterHp > 0) {
     const monsterAttackLog = await executeMonsterAttack(session, characterStats)
     logs.push(monsterAttackLog)
@@ -674,11 +625,8 @@ export async function executeTurn(
   return logs
 }
 
-/**
- * Flee from hunt
- */
 export function fleeHunt(session: HuntSession): boolean {
-  // 40% chance to flee successfully
+
   if (Math.random() < 0.4) {
     session.status = 'fled'
     session.rewards = {
@@ -693,9 +641,6 @@ export function fleeHunt(session: HuntSession): boolean {
   return false
 }
 
-/**
- * Get hunt summary
- */
 export function getHuntSummary(session: HuntSession): string {
   const lines = [
     `🎯 Hunt Summary`,

@@ -13,7 +13,7 @@ const path = require('path');
 @Config()
 export class Command extends BaseCommand {
       declare readonly setting: boolean;
-      
+
       constructor(public client: Whatsapp.IClient, M: Whatsapp.IWaMess) {
             super(client, M);
       }
@@ -32,7 +32,7 @@ export class Command extends BaseCommand {
             let startTime = Date.now();
             try {
                   let { query, modify } = this;
-                  
+
                   if (!query.full) {
                         return void (await this.replyText('Gunakan format: > code'));
                   }
@@ -73,7 +73,7 @@ export class Command extends BaseCommand {
                         const keys = Object.keys(sandbox);
                         const values = Object.values(sandbox);
                         const code = `(async () => { ${query.full}})()`;
-                        
+
                         ev = await eval(`
                               (function(${keys.join(',')}) {
                                     return ${code};
@@ -89,9 +89,9 @@ export class Command extends BaseCommand {
             } catch (e: any) {
                   const execTime = Date.now() - startTime;
                   const errMsg = e.message || e.toString();
-                  
+
                   Logger.error('Eval error:', e);
-                  
+
                   const response = `Error (${execTime}ms)\n\`\`\`\n${errMsg}\n\`\`\``;
                   return void (await this.replyText(response));
             }
@@ -109,7 +109,7 @@ export class Command extends BaseCommand {
             let startTime = Date.now();
             try {
                   const { query, modify } = this;
-                  
+
                   if (!query.full) {
                         return void (await this.replyText('Gunakan format: $ command'));
                   }
@@ -122,7 +122,7 @@ export class Command extends BaseCommand {
                         cwd,
                         encoding: 'utf-8',
                         maxBuffer: 1024 * 1024 * 5,
-                        timeout: 15000, 
+                        timeout: 15000,
                   });
 
                   const execTime = Date.now() - startTime;
@@ -133,7 +133,7 @@ export class Command extends BaseCommand {
                               const formatted = format(parsed, false, 3);
                               return void (await this.replyText(`JSON (${execTime}ms)\n\`\`\`\n${formatted}\n\`\`\``));
                         } catch {
-                              // Fall through to normal output
+
                         }
                   }
 
@@ -148,7 +148,7 @@ export class Command extends BaseCommand {
                   const execTime = Date.now() - startTime;
                   const errMsg = error.stderr?.toString() || error.message || error.toString();
                   const truncated = errMsg.length > 1000 ? errMsg.substring(0, 1000) + '\n...[truncated]' : errMsg;
-                  
+
                   Logger.error('Exec error:', error);
                   return void (await this.replyText(`Error (${execTime}ms)\n\`\`\`\n${truncated}\n\`\`\``));
             }

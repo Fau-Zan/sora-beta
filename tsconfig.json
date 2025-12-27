@@ -17,6 +17,7 @@
     "strictPropertyInitialization": false, 
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "typeRoots": ["./node_modules/@types", "./script/typings"]
   },
   "include": [
     "script/**/*"

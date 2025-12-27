@@ -82,7 +82,7 @@ export class Database extends DB {
   public async removeDocument<T>(doc: Partial<T> & PouchDB.Core.IdMeta & PouchDB.Core.RevisionIdMeta) {
     return this.remove(doc)
   }
-  
+
   public async reset(): Promise<Database> {
     await this.destroy()
     return new Database(this.name, (this as any).__opts)

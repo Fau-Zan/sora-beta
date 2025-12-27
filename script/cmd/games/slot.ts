@@ -17,8 +17,8 @@ function calculateMultiplier(symbols: SlotSymbol[]): number {
   const [s1, s2, s3] = symbols
 
   if (s1 === s2 && s2 === s3) {
-    if (s1 === '💎') return 50 
-    return 10 
+    if (s1 === '💎') return 50
+    return 10
   }
 
   if (s1 === s2 || s2 === s3 || s1 === s3) {
@@ -114,7 +114,7 @@ export class command extends BaseCommand {
           if (gemChance < 0.1) {
             const { applyFableBuffs } = await import('../../utils/leveling')
             const { gems: buffedGems } = await applyFableBuffs(sender, 0, 0, 1)
-            
+
             await store.adminAdjust(sender, { gems: Number((await store.getPlayer(sender))!.gems) + buffedGems })
             message += `🤑 JACKPOT!!!!
 💎 +${buffedGems} GEMS!

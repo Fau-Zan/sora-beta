@@ -1,7 +1,3 @@
-/**
- * Equipment Store - PostgreSQL
- * Manages character equipment and inventory
- */
 
 import { PoolClient } from 'pg'
 import { PostgresBase } from './postgres'
@@ -56,7 +52,6 @@ export class EquipmentStore extends PostgresBase {
   async init() {
     if (this.initialized) return
 
-    // Equipment inventory
     await this.ensureTable(
       'equipment',
       `
@@ -78,7 +73,6 @@ export class EquipmentStore extends PostgresBase {
       `
     )
 
-    // Character class and equipped items
     await this.ensureTable(
       'character_class',
       `
@@ -98,20 +92,16 @@ export class EquipmentStore extends PostgresBase {
       `
     )
 
-    // Create index for faster queries
     await this.query(`CREATE INDEX IF NOT EXISTS idx_equipment_jid ON equipment(jid)`)
     await this.query(`CREATE INDEX IF NOT EXISTS idx_equipment_equipped ON equipment(is_equipped) WHERE is_equipped = true`)
 
     this.initialized = true
   }
 
-  /**
-   * Add equipment to character inventory
-   */
   async addEquipment(jid: string, equipment: Equipment): Promise<void> {
     const query = `
-      INSERT INTO equipment (id, jid, name, type, rarity, atk_bonus, defense_bonus, 
-                            hp_bonus, crit_damage_bonus, atk_percent_bonus, 
+      INSERT INTO equipment (id, jid, name, type, rarity, atk_bonus, defense_bonus,
+                            hp_bonus, crit_damage_bonus, atk_percent_bonus,
                             element_bonus, elemental_damage_bonus_bonus)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT (id) DO NOTHING
@@ -132,9 +122,6 @@ export class EquipmentStore extends PostgresBase {
     ])
   }
 
-  /**
-   * Get character's inventory
-   */
   async getInventory(jid: string): Promise<Equipment[]> {
     const result = await this.query(
       `SELECT * FROM equipment WHERE jid = $1 ORDER BY acquired_at DESC`,
@@ -155,9 +142,6 @@ export class EquipmentStore extends PostgresBase {
     }))
   }
 
-  /**
-   * Get equipped items
-   */
   async getEquippedItems(jid: string): Promise<{ weapon?: Equipment; armor?: Equipment; accessory?: Equipment }> {
     const result = await this.query(
       `SELECT equipped_weapon, equipped_armor, equipped_accessory FROM character_class WHERE jid = $1`,
@@ -195,11 +179,8 @@ export class EquipmentStore extends PostgresBase {
     return equipped
   }
 
-  /**
-   * Equip item
-   */
   async equipItem(jid: string, equipmentId: string): Promise<boolean> {
-    // Get equipment type
+
     const eqResult = await this.query(`SELECT type FROM equipment WHERE id = $1 AND jid = $2`, [
       equipmentId,
       jid,
@@ -210,7 +191,6 @@ export class EquipmentStore extends PostgresBase {
     const type = eqResult.rows[0].type
     const column = `equipped_${type}`
 
-    // Update equipment
     await this.query(`UPDATE character_class SET ${column} = $1, updated_at = now() WHERE jid = $2`, [
       equipmentId,
       jid,
@@ -219,17 +199,11 @@ export class EquipmentStore extends PostgresBase {
     return true
   }
 
-  /**
-   * Unequip item
-   */
   async unequipItem(jid: string, type: 'weapon' | 'armor' | 'accessory'): Promise<void> {
     const column = `equipped_${type}`
     await this.query(`UPDATE character_class SET ${column} = null, updated_at = now() WHERE jid = $1`, [jid])
   }
 
-  /**
-   * Set character class
-   */
   async setClass(jid: string, classType: string): Promise<void> {
     const query = `
       INSERT INTO character_class (jid, current_class)
@@ -241,9 +215,6 @@ export class EquipmentStore extends PostgresBase {
     await this.query(query, [jid, classType])
   }
 
-  /**
-   * Set character element
-   */
   async setElement(jid: string, element: string | null): Promise<void> {
     const query = `
       INSERT INTO character_class (jid, selected_element)
@@ -255,17 +226,11 @@ export class EquipmentStore extends PostgresBase {
     await this.query(query, [jid, element])
   }
 
-  /**
-   * Get character class info
-   */
   async getClassInfo(jid: string): Promise<CharacterClassRow | null> {
     const result = await this.query(`SELECT * FROM character_class WHERE jid = $1`, [jid])
     return result.rows[0] || null
   }
 
-  /**
-   * Helper: Convert DB row to Equipment interface
-   */
   private rowToEquipment(row: EquipmentRow): Equipment {
     return {
       id: row.id,

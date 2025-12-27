@@ -1,4 +1,4 @@
-//Sources: https://github.com/tfkhdyt/kbbi-bot/blob/main/src/Scraper.ts
+
 
 import Axios from 'axios';
 import { load, CheerioAPI } from 'cheerio';

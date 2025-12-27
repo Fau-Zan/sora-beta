@@ -177,7 +177,6 @@ export class FableStore extends PostgresBase {
       if (fable.condition_type !== triggerType) continue
       if (triggerValue < fable.condition_value) continue
 
-      // Trigger found, insert into player_fables
       await this.query(
         `INSERT INTO player_fables (jid, fable_id, triggered_at)
          VALUES ($1, $2, now())
@@ -222,7 +221,7 @@ export class FableStore extends PostgresBase {
   async giveFableToUser(jid: string, fableId: number): Promise<boolean> {
     try {
       await this.query(
-        `INSERT INTO player_fables (jid, fable_id, triggered_at, active) 
+        `INSERT INTO player_fables (jid, fable_id, triggered_at, active)
          VALUES ($1, $2, now(), true)
          ON CONFLICT (jid, fable_id) DO UPDATE SET triggered_at = now(), active = true`,
         [jid, fableId]

@@ -74,7 +74,7 @@ export class Queue {
                   this.list[type].shift();
                   this.run(type);
             };
-            //const tadi = Date.now()
+
             this.list[type][0]
                   [0](...this.list[type][0][1])
                   .then((data) => {

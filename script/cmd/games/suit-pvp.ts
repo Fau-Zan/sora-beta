@@ -243,10 +243,10 @@ export class command extends BaseCommand {
         loserJid = session.opponent
         const winnerData = await store.getPlayer(winnerJid)
         const loserData = await store.getPlayer(loserJid)
-        
+
         const { applyFableBuffs } = await import('../../utils/leveling')
         const { coins: buffedCoins } = await applyFableBuffs(winnerJid, 0, session.bet)
-        
+
         await store.adminAdjust(winnerJid, { coins: Number(winnerData!.coins) + buffedCoins })
         await store.adminAdjust(loserJid, { coins: Math.max(0, Number(loserData!.coins) - session.bet) })
         await store.addExp(winnerJid, 50, 1, 0)
@@ -257,10 +257,10 @@ export class command extends BaseCommand {
         loserJid = session.challenger
         const winnerData = await store.getPlayer(winnerJid)
         const loserData = await store.getPlayer(loserJid)
-        
+
         const { applyFableBuffs } = await import('../../utils/leveling')
         const { coins: buffedCoins } = await applyFableBuffs(winnerJid, 0, session.bet)
-        
+
         await store.adminAdjust(winnerJid, { coins: Number(winnerData!.coins) + buffedCoins })
         await store.adminAdjust(loserJid, { coins: Math.max(0, Number(loserData!.coins) - session.bet) })
         await store.addExp(winnerJid, 50, 1, 0)

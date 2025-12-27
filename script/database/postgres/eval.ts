@@ -4,7 +4,6 @@ const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
 });
 
-
 export const query = async (sql: string, params?: any[]) => {
   try {
     const result = await pool.query(sql, params);
@@ -24,23 +23,20 @@ export const query = async (sql: string, params?: any[]) => {
   }
 };
 
-/**
- * Get WA Auth Session Data
- */
 export const getWAAuthSession = async (sessionId: string) => {
   try {
     const result = await query(
-      `SELECT 
+      `SELECT
         session_id,
         LENGTH(auth)::bigint as size_bytes,
         pg_size_pretty(LENGTH(auth)::bigint) as size,
         created_at,
         updated_at
-      FROM wa_auth 
+      FROM wa_auth
       WHERE session_id = $1`,
       [sessionId]
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -51,23 +47,20 @@ export const getWAAuthSession = async (sessionId: string) => {
   }
 };
 
-/**
- * Get all WA Auth Sessions
- */
 export const getAllWAAuthSessions = async () => {
   try {
     const result = await query(
-      `SELECT 
+      `SELECT
         session_id,
         LENGTH(auth)::bigint as size_bytes,
         pg_size_pretty(LENGTH(auth)::bigint) as size,
         created_at,
         updated_at,
         NOW() - updated_at as time_since_update
-      FROM wa_auth 
+      FROM wa_auth
       ORDER BY updated_at DESC`
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -79,13 +72,10 @@ export const getAllWAAuthSessions = async () => {
   }
 };
 
-/**
- * Get WA Auth Stats
- */
 export const getWAAuthStats = async () => {
   try {
     const result = await query(
-      `SELECT 
+      `SELECT
         COUNT(*) as total_sessions,
         SUM(LENGTH(auth))::bigint as total_size_bytes,
         pg_size_pretty(SUM(LENGTH(auth))::bigint) as total_size,
@@ -97,7 +87,7 @@ export const getWAAuthStats = async () => {
         pg_size_pretty(MIN(LENGTH(auth))::bigint) as min_size
       FROM wa_auth`
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -108,18 +98,15 @@ export const getWAAuthStats = async () => {
   }
 };
 
-/**
- * Get WA Messages
- */
 export const getWAMessages = async (limit: number = 10, offset: number = 0) => {
   try {
     const result = await query(
-      `SELECT * FROM wa_messages 
-       ORDER BY timestamp DESC 
+      `SELECT * FROM wa_messages
+       ORDER BY timestamp DESC
        LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -131,19 +118,16 @@ export const getWAMessages = async (limit: number = 10, offset: number = 0) => {
   }
 };
 
-/**
- * Search WA Messages by content
- */
 export const searchWAMessages = async (searchTerm: string, limit: number = 10) => {
   try {
     const result = await query(
-      `SELECT * FROM wa_messages 
-       WHERE content ILIKE $1 
-       ORDER BY timestamp DESC 
+      `SELECT * FROM wa_messages
+       WHERE content ILIKE $1
+       ORDER BY timestamp DESC
        LIMIT $2`,
       [`%${searchTerm}%`, limit]
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -155,19 +139,16 @@ export const searchWAMessages = async (searchTerm: string, limit: number = 10) =
   }
 };
 
-/**
- * Get messages from specific JID
- */
 export const getMessagesFromJID = async (jid: string, limit: number = 10) => {
   try {
     const result = await query(
-      `SELECT * FROM wa_messages 
-       WHERE from_jid = $1 
-       ORDER BY timestamp DESC 
+      `SELECT * FROM wa_messages
+       WHERE from_jid = $1
+       ORDER BY timestamp DESC
        LIMIT $2`,
       [jid, limit]
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -179,20 +160,17 @@ export const getMessagesFromJID = async (jid: string, limit: number = 10) => {
   }
 };
 
-/**
- * Get database stats
- */
 export const getDatabaseStats = async () => {
   try {
     const result = await query(
-      `SELECT 
+      `SELECT
         datname,
         pg_size_pretty(pg_database_size(datname)) as size
       FROM pg_database
       WHERE datname NOT IN ('template0', 'template1', 'postgres')
       ORDER BY pg_database_size(datname) DESC`
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -203,13 +181,10 @@ export const getDatabaseStats = async () => {
   }
 };
 
-/**
- * Get table sizes
- */
 export const getTableSizes = async (schemaName: string = 'public') => {
   try {
     const result = await query(
-      `SELECT 
+      `SELECT
         tablename,
         pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
       FROM pg_tables
@@ -217,7 +192,7 @@ export const getTableSizes = async (schemaName: string = 'public') => {
       ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC`,
       [schemaName]
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -228,13 +203,10 @@ export const getTableSizes = async (schemaName: string = 'public') => {
   }
 };
 
-/**
- * Get connection stats
- */
 export const getConnectionStats = async () => {
   try {
     const result = await query(
-      `SELECT 
+      `SELECT
         datname,
         COUNT(*) as connections,
         state
@@ -242,7 +214,7 @@ export const getConnectionStats = async () => {
       GROUP BY datname, state
       ORDER BY datname, state`
     );
-    
+
     if (!result.success) return result;
     return {
       success: true,
@@ -253,14 +225,10 @@ export const getConnectionStats = async () => {
   }
 };
 
-/**
- * Close pool
- */
 export const closePool = async () => {
   await pool.end();
 };
 
-// Export all as default object too
 export default {
   query,
   getWAAuthSession,
